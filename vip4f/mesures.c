@@ -8,45 +8,6 @@
 #include "include/shared.h"
 
 /*=====================================================================================*/
-/*-------------------------------  AgPrepRMS  -----------------------------------------*/
-/*=====================================================================================*/
-void agCumulRMS(void *arg)
-{
-  // Get access to the shared structure
-  struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
-  
-  long indexEchan, indexVoies;
-  int cmpt;
-
-  int id = get_cpuid();
-
-  while (1) {
-    while (id != owner);  
-
-    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
-      // MAJ des cumuls echantillons
-      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[indexVoies]);
-      // MAJ des cumuls carre echantillons
-      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[indexVoies]*(U_LONG)vip4f->DataBufferI[indexVoies]);
-    }
-    
-    cmpt++;
-    
-    if (cmpt>D_TRS_NB_ECH_RMS) {
-      cmpt = 0;
-      for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
-	// RAZ des cumuls échantillons
-	vip4f->V_TRS_CumulRms[indexVoies] = 0;
-	// RAZ des cumuls carrés échantillons	  
-	vip4f->V_TRS_CumulRms2[indexVoies] = 0;				
-      }
-    }
-    
-    owner = 0;
-  }
-}
-
-/*=====================================================================================*/
 /*-------------------------------  AgRMS  -----------------------------------------*/
 /*=====================================================================================*/
 void agRMS(void *arg)
