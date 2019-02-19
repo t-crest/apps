@@ -32,7 +32,8 @@ void ag5051_51Inv(void *arg)
   
   F51_Inv_Init(3, 200, 0); /* 0 ms */
   F51_Inv_Init(4, 1000, 5); /* 10ms */
-  
+
+  // Periodic part
   while (1) {
     while (id != owner);
     
@@ -42,6 +43,9 @@ void ag5051_51Inv(void *arg)
     
     F51_Inv_RapideExp(3, vip4f->V_mod2Imax);
     F51_Inv_RapideExp(4, vip4f->V_mod2Imax);
+
+    // Going back to agARGA
+    owner = 0;
   }
 }
 
