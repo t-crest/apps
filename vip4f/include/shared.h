@@ -2,7 +2,7 @@
 struct vip4f_t {
   // Produced by agARGA 
   /* For I0, I1, I2, I3 */
-  SI32 DataBufferI[D_ACQ_NB_VOIES];
+  SI32 DataBufferI[D_TRS_NB_ECH_FILTRE][D_ACQ_NB_VOIES];
   long counter;
 
   // Produced by AgRMS
@@ -20,13 +20,14 @@ struct vip4f_t {
   // Produced by AgCreteMoyTRS
   /* cumul Ã©chantillons pour filtre TRS */
   /* I1, I2, I3 et Io */
-  int V_TRS_CumulFiltre [D_ACQ_NB_VOIES];
+  int V_TRS_CumulFiltre[D_TRS_NB_BUF_I][D_ACQ_NB_VOIES];
   S_TRS_DETC V_DETC[D_ACQ_NB_VOIES-1];
   long  V_mod2Imax;	/* grandeur caracteristique  = Imax en Pts Can carre */
   /* Voies I1, I2, I3 et Io */
   long long VS_Mod2 [D_ACQ_NB_VOIES];
   /* Voies I1, I2 et I3 */
-  long VS_Mod2Crete [D_ACQ_NB_VOIES-1];  
+  long VS_Mod2Crete [D_ACQ_NB_VOIES-1];
+  long counter_trs;
 } __attribute__((packed));
 
 /* To define the periodicity of the ARGA task */
