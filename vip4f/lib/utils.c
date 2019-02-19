@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include "Pts.h"
 #include "../include/define.h"
+#include "../include/typedef.h"
 
 long diviseAuMieux(long A, long B) {
 

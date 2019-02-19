@@ -14,9 +14,40 @@ volatile _UNCACHED int owner;
 
 void display(struct vip4f_t *vip4f, int current_time) 
 {
-  printf("ARGA/T=%d: i=%lu; I1=%d, I2=%d, I3=%d, Io=%d\n", current_time, vip4f->counter,
-	 vip4f->DataBufferI[D_ACQ_VOIE_I1], vip4f->DataBufferI[D_ACQ_VOIE_I2], 
-	 vip4f->DataBufferI[D_ACQ_VOIE_I3], vip4f->DataBufferI[D_ACQ_VOIE_Io]);
+  printf("Counter=%lu, Time=%d\n", vip4f->counter, current_time);
+  printf("ARGA/I1=%d, I2=%d, I3=%d, Io=%d\n", 
+	 (int) vip4f->DataBufferI[D_ACQ_VOIE_I1], (int) vip4f->DataBufferI[D_ACQ_VOIE_I2], 
+	 (int) vip4f->DataBufferI[D_ACQ_VOIE_I3], (int) vip4f->DataBufferI[D_ACQ_VOIE_Io]);
+  
+  printf("RMS/AI1=%d, AI2=%d, AI3=%d, 2I1=%lu, 2I2=%lu, 2I3=%lu\n",
+	 (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I1], (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I2],
+	 (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I3],
+	 vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I1], vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I2],
+	 vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I3]);
+  /* printf("RMS/I1=%d, I2=%d, I3=%d, Io=%d, I1RMS=%d, I2RMS=%d, I3RMS=%d\n",  */
+  /* 	 vip4f->I[D_ACQ_VOIE_I1], vip4f->I[D_ACQ_VOIE_I2], */
+  /* 	 vip4f->I[D_ACQ_VOIE_I3], vip4f->I[D_ACQ_VOIE_Io], */
+  /* 	 (int) vip4f->RMS[D_ACQ_VOIE_I1], (int) vip4f->RMS[D_ACQ_VOIE_I2], */
+  /* 	 (int) vip4f->RMS[D_ACQ_VOIE_I3]); */
+  
+  printf("MOY/I1=%d, I2=%d, I3=%d, Io=%d\n", 
+	 vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_I1], vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_I2], 
+	 vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_I3], vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_Io]);
+  /* printf("CRE/I1.S=%d, I2.S=%d, I3.S=%d\n",  */
+  /*         vip4f->V_DETC[D_ACQ_VOIE_I1].S, vip4f->V_DETC[D_ACQ_VOIE_I2].S, */
+  /* 	 vip4f->V_DETC[D_ACQ_VOIE_I3].S); */
+  /* printf("TRS/Crete filtre=%Lu, %Lu, %Lu\n",  */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I1]), */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I2]),  */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I3])); */
+  /* printf("TRS/SinCosH1=%Lu, %Lu, %Lu, %Lu\n",  */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I1]), */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I2]),  */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I3]), */
+  /* 	 (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_Io])); */
+  /* printf("TRS/V_mod2Imax=%Lu\n", (unsigned long long)(vip4f->V_mod2Imax)); */
+
+  // TODO: add display when protection is triggered
 }
 
 
@@ -39,7 +70,6 @@ void agARGA(void *arg)  {
   int current_time, start_time, end_time;
 
   int id = get_cpuid();
-  printf("ARGA, cpuid=%d\n",id);
 
   vip4f->counter = 0;
 
@@ -49,11 +79,11 @@ void agARGA(void *arg)  {
     // If needed, display stuff
     display(vip4f, *timer_ptr);
 
-    start_time = *timer_ptr;
-    *dead_ptr = P_ARGA - OVERHEAD_DELAY;
-    val = *dead_ptr;
-    end_time = *timer_ptr;
-    printf("Delay measurement %d %d\n", end_time-start_time, val);
+    /* start_time = *timer_ptr; */
+    /* *dead_ptr = P_ARGA - OVERHEAD_DELAY; */
+    /* val = *dead_ptr; */
+    /* end_time = *timer_ptr; */
+    /* printf("Delay measurement %d %d\n", end_time-start_time, val); */
     
     start_time = *timer_ptr;
     vip4f->DataBufferI[D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
@@ -79,16 +109,9 @@ int main() {
 
   owner = 0; // start with myself  
 
-  printf("Launching core 1, out of %d\n", get_cpucnt());
   corethread_create(1, &agRMS, NULL);
-
-  printf("Launching core 2, out of %d\n", get_cpucnt());
   corethread_create(2, &agCreteMoyTRS, NULL);
-
-  printf("Launching core 3, out of %d\n", get_cpucnt());
   corethread_create(3, &ag5051_51Inv, NULL);
-
-  printf("Launching core 0, out of %d\n", get_cpucnt());  
   agARGA(NULL);
 
   return 0;

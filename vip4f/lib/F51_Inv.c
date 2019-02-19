@@ -10,6 +10,7 @@
 *****************************************************************************/ 
 
 #include "../include/define.h"
+#include "../include/typedef.h"
 
 // table pour comptage des tempos a temps inverse
 #include "TempsInv.h"

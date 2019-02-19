@@ -20,6 +20,8 @@
 //			INCLUDES
 //
 //*******************************************************************************
+#include <stdlib.h>
+
 #include "../include/typedef.h"
 #include "../include/define.h"
 

@@ -25,14 +25,14 @@ void agRMS(void *arg)
   
   long indexEchan, indexVoies;
   long val;
-  int cmpt = 1;
+  int cmpt = 0;
 
   int id = get_cpuid();
 
   // Initialization part
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
-    V_TRS_CumulRms[indexVoies] = 0;
-    V_TRS_CumulRms2[indexVoies] = 0;
+    vip4f->V_TRS_CumulRms[indexVoies] = 0;
+    vip4f->V_TRS_CumulRms2[indexVoies] = 0;
   }
 
   // Periodic part  
@@ -41,18 +41,16 @@ void agRMS(void *arg)
 
     for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
       // MAJ des cumuls echantillons
-      V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[indexVoies]);
+      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[indexVoies]);
       // MAJ des cumuls carre echantillons
-      V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[indexVoies]*
+      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[indexVoies]*
 					      (U_LONG)vip4f->DataBufferI[indexVoies]);
     }
     
-    cmpt++;
-
     if (cmpt == D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
-	vip4f->RMS [indexVoies] = CourantRMS_dA(V_TRS_CumulRms2[indexVoies],
-						V_TRS_CumulRms[indexVoies]);  
+	vip4f->RMS [indexVoies] = CourantRMS_dA(vip4f->V_TRS_CumulRms2[indexVoies],
+						vip4f->V_TRS_CumulRms[indexVoies]);  
 	val = (unsigned long)(isqrt(vip4f->VS_Mod2[indexVoies]));
 	vip4f->I[indexVoies] = ((int)val * 10)/55;
       }
@@ -63,13 +61,14 @@ void agRMS(void *arg)
 
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
 	// RAZ des cumuls échantillons
-	V_TRS_CumulRms[indexVoies] = 0;
+	vip4f->V_TRS_CumulRms[indexVoies] = 0;
 	// RAZ des cumuls carrés échantillons	  
-	V_TRS_CumulRms2[indexVoies] = 0;				    
+	vip4f->V_TRS_CumulRms2[indexVoies] = 0;				    
       }
 
-      cmpt = 1;
+      cmpt = 0;
     }
+    cmpt_trs++;    
 
     // Going to agCreteMoyRMS
     owner = 2;
@@ -157,8 +156,8 @@ void agCreteMoyTRS(void *arg)
   /* Uniquement S1, S2 et S3 */
   long    VS_Mod2_S [D_ACQ_NB_VOIES-1];
   
-  int cmpt_moy = 1;
-  int cmpt_trs = 1;  
+  int cmpt_moy = 0;
+  int cmpt_trs = 0;  
 
   // Initialization part
   init_crete(vip4f);
@@ -181,8 +180,9 @@ void agCreteMoyTRS(void *arg)
     agCrete(vip4f);
     if (cmpt_moy == D_TRS_NB_ECH_FILTRE) {
       agMoy(vip4f);
-      cmpt_moy = 1;
+      cmpt_moy = 0;
     }
+    cmpt_moy++;    
 
     if (cmpt_trs == D_TRS_NB_BUF_I) {
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
@@ -243,12 +243,13 @@ void agCreteMoyTRS(void *arg)
 	    vip4f->V_mod2Imax = VS_Mod2_S[D_ACQ_VOIE_I3];
 	}
 
-      cmpt_trs = 1;
+      cmpt_trs = 0;
 
       // In that case, the next task to be executed is ag5051_51Inv
       owner = 3;
       continue;
     }
+    cmpt_trs++;    
 
     // If not than going back to agARGA
     owner = 0;
