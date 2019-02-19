@@ -3,8 +3,6 @@
 #include <machine/patmos.h>
 #include <machine/spm.h>
 
-#include "../../libcorethread/corethread.h"
-
 #include "include/typedef.h"
 #include "include/define.h"
 #include "include/shared.h"
