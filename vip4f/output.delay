@@ -1,0 +1,13 @@
+Launching core 1, out of 2
+ARGA, cpuid=0
+Delay measurement 507 0
+ARGA/T=133844: i=1; I1=100, I2=-50, I3=-50, Io=0
+Cumul RMS /T=767621: I1=100, I2=-50, I3=-50, 2I1=10000, 2I2=2500, 2I3=0
+Delay measurement 1092 0
+ARGA/T=767621: i=2; I1=98, I2=-64, I3=-34, Io=0
+Cumul RMS /T=1798931: I1=200, I2=-100, I3=-100, 2I1=20000, 2I2=5000, 2I3=5000
+Delay measurement 1092 0
+ARGA/T=1798931: i=3; I1=94, I2=-77, I3=-17, Io=0
+Cumul RMS /T=2892233: I1=300, I2=-150, I3=-150, 2I1=30000, 2I2=7500, 2I3=7500
+Delay measurement 1092 0
+ARGA/T=2892233: i=4; 
