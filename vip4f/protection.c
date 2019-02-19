@@ -44,8 +44,8 @@ void ag5051_51Inv(void *arg)
     F51_Inv_RapideExp(3, vip4f->V_mod2Imax);
     F51_Inv_RapideExp(4, vip4f->V_mod2Imax);
 
-    // Going back to agARGA
-    owner = 0;
+    // Going back to agRMS task
+    owner = 1;
   }
 }
 

@@ -14,10 +14,19 @@ volatile _UNCACHED int owner;
 
 void display(struct vip4f_t *vip4f, int current_time) 
 {
-  printf("Counter=%lu, Time=%d\n", vip4f->counter, current_time);
-  printf("ARGA/I1=%d, I2=%d, I3=%d, Io=%d\n", 
-	 (int) vip4f->DataBufferI[D_ACQ_VOIE_I1], (int) vip4f->DataBufferI[D_ACQ_VOIE_I2], 
-	 (int) vip4f->DataBufferI[D_ACQ_VOIE_I3], (int) vip4f->DataBufferI[D_ACQ_VOIE_Io]);
+  long local_counter = vip4f->counter;
+  long local_counter_trs = vip4f->counter_trs;
+  local_counter--;
+  local_counter_trs--;
+  if (local_counter <= 0) local_counter = 0;
+  if (local_counter_trs <= 0) local_counter_trs = 0;
+  
+  //  printf("Time=%d\n", current_time);
+  printf("ARGA/c=%ld, I1=%d, I2=%d, I3=%d, Io=%d\n", local_counter,
+	 (int) vip4f->DataBufferI[local_counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I1],
+	 (int) vip4f->DataBufferI[local_counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I2], 
+	 (int) vip4f->DataBufferI[local_counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I3],
+	 (int) vip4f->DataBufferI[local_counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_Io]);
   
   printf("RMS/AI1=%d, AI2=%d, AI3=%d, 2I1=%lu, 2I2=%lu, 2I3=%lu\n",
 	 (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I1], (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I2],
@@ -30,9 +39,11 @@ void display(struct vip4f_t *vip4f, int current_time)
   /* 	 (int) vip4f->RMS[D_ACQ_VOIE_I1], (int) vip4f->RMS[D_ACQ_VOIE_I2], */
   /* 	 (int) vip4f->RMS[D_ACQ_VOIE_I3]); */
   
-  printf("MOY/I1=%d, I2=%d, I3=%d, Io=%d\n", 
-	 vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_I1], vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_I2], 
-	 vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_I3], vip4f->V_TRS_CumulFiltre [D_ACQ_VOIE_Io]);
+  printf("MOY/c=%ld, I1=%d, I2=%d, I3=%d, Io=%d\n", local_counter_trs,
+	 vip4f->V_TRS_CumulFiltre[local_counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_I1],
+	 vip4f->V_TRS_CumulFiltre[local_counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_I2], 
+	 vip4f->V_TRS_CumulFiltre[local_counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_I3],
+	 vip4f->V_TRS_CumulFiltre[local_counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_Io]);
   /* printf("CRE/I1.S=%d, I2.S=%d, I3.S=%d\n",  */
   /*         vip4f->V_DETC[D_ACQ_VOIE_I1].S, vip4f->V_DETC[D_ACQ_VOIE_I2].S, */
   /* 	 vip4f->V_DETC[D_ACQ_VOIE_I3].S); */
@@ -84,12 +95,12 @@ void agARGA(void *arg)  {
     /* val = *dead_ptr; */
     /* end_time = *timer_ptr; */
     /* printf("Delay measurement %d %d\n", end_time-start_time, val); */
-    
+
     start_time = *timer_ptr;
-    vip4f->DataBufferI[D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
-    vip4f->DataBufferI[D_ACQ_VOIE_I2] = sinus_data100A[cmpt][D_ACQ_VOIE_I2];
-    vip4f->DataBufferI[D_ACQ_VOIE_I3] = sinus_data100A[cmpt][D_ACQ_VOIE_I3];
-    vip4f->DataBufferI[D_ACQ_VOIE_Io] = 0;
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I2] = sinus_data100A[cmpt][D_ACQ_VOIE_I2];
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I3] = sinus_data100A[cmpt][D_ACQ_VOIE_I3];
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_Io] = 0;
     vip4f->counter++;
 
     ++cmpt;    
@@ -100,8 +111,8 @@ void agARGA(void *arg)  {
     
     end_time = *timer_ptr;
 
-    // Going to agRMS task
-    owner = 1;
+    // Going to agCreteMoyeTRS task
+    owner = 2;
   }
 }
 

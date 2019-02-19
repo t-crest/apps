@@ -41,10 +41,10 @@ void agRMS(void *arg)
 
     for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
       // MAJ des cumuls echantillons
-      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[indexVoies]);
+      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
       // MAJ des cumuls carre echantillons
-      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[indexVoies]*
-					      (U_LONG)vip4f->DataBufferI[indexVoies]);
+      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]*
+					      (U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
     }
     
     if (cmpt == D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */
@@ -68,10 +68,10 @@ void agRMS(void *arg)
 
       cmpt = 0;
     }
-    cmpt_trs++;    
+    cmpt++;    
 
-    // Going to agCreteMoyRMS
-    owner = 2;
+    // Going back to agARGA
+    owner = 0;
   }
 }
 
@@ -93,13 +93,13 @@ void init_crete(struct vip4f_t *vip4f)
 
 void init_moy(struct vip4f_t *vip4f)
 {
-  
   /* Initialisation des valeurs cummulées */
   for (long indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
-    vip4f->V_TRS_CumulFiltre [indexVoies] = 0;				
+    for (long indexEchan = 0; indexEchan < D_TRS_NB_BUF_I; ++indexEchan) {
+      vip4f->V_TRS_CumulFiltre[indexEchan][indexVoies] = 0;
+    }
   }
-
-
+  vip4f->counter_trs = 0;
 }
 
 void agMoy(struct vip4f_t *vip4f)
@@ -110,20 +110,21 @@ void agMoy(struct vip4f_t *vip4f)
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
     for (indexEchan = 0; indexEchan < D_TRS_NB_ECH_FILTRE; ++indexEchan) {      
       // MAJ des cumuls échantillons
-      // TODO: MORE ITEMS ARE NEEDED!
-      //V_TRS_CumulFiltre [indexVoies] += AgARGA`indexEchan$DataBufferI [indexVoies];
-      vip4f->V_TRS_CumulFiltre [indexVoies] += vip4f->DataBufferI [indexVoies];      
+      vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] += vip4f->DataBufferI[indexEchan][indexVoies];      
     }
     // Add 1 before truncature
     // 0/3 => truncate to 0, 1/3 => truncate to 0, and 2/3 => truncate to 1
-    if (vip4f->V_TRS_CumulFiltre [indexVoies] >= 0) vip4f->V_TRS_CumulFiltre [indexVoies] += 1;
-    else vip4f->V_TRS_CumulFiltre [indexVoies] -= 1;
+    if (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] >= 0)
+      vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] += 1;
+    else vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] -= 1;
   }
   
   // Ecriture des moyennes sur 3 
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {    
-    vip4f->V_TRS_CumulFiltre [indexVoies] = (vip4f->V_TRS_CumulFiltre [indexVoies])/D_TRS_NB_ECH_FILTRE;
+    vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] = (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies])/D_TRS_NB_ECH_FILTRE;
   }
+
+  vip4f->counter_trs++;
 }
 
 void agCrete(struct vip4f_t *vip4f)
@@ -131,7 +132,7 @@ void agCrete(struct vip4f_t *vip4f)
   long indexVoies;
   
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
-    TRS_DetectionCrete (vip4f->DataBufferI [indexVoies], &(vip4f->V_DETC[indexVoies]));
+    TRS_DetectionCrete (vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies], &(vip4f->V_DETC[indexVoies]));
   }
 }
 
@@ -186,21 +187,23 @@ void agCreteMoyTRS(void *arg)
 
     if (cmpt_trs == D_TRS_NB_BUF_I) {
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
-	for (indexEchan = 0; indexEchan < D_TRS_NB_BUF_I; ++indexEchan) {
-	  // TODO: more items are needed
-	  //echantillon[indexVoies][indexEchan] = AgMoy`indexEchan $V_TRS_CumulFiltre [indexVoies];      
-	  echantillon[indexVoies][indexEchan] = vip4f->V_TRS_CumulFiltre [indexVoies];
+	// Patch to put in echantillon array the last values (and thus highest indexEchan)
+	// at the beginning of the array (and thus the lowest index)
+	long index = 0;
+	for (indexEchan = D_TRS_NB_BUF_I - 1; indexEchan >= 0; --indexEchan) {
+	  echantillon[indexVoies][index] = vip4f->V_TRS_CumulFiltre[indexEchan][indexVoies];
+	  index++;
 	}
       }
       
       /* Mesure de phaseur (voies I1, I2, I3 et Io),crete filtree */
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
-	TRS_EchantillonSinCosH12(&echantillon[indexVoies], &(vip4f->VS_Mod2[indexVoies]), indexVoies);
+	TRS_EchantillonSinCosH12((int *)&echantillon[indexVoies], &(vip4f->VS_Mod2[indexVoies]), indexVoies);
       }
     
       /* Uniquement pour voies I1, I2 et I3 */
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {    
-	TRS_EchantillonCreteFiltree2(&echantillon[indexVoies],&(vip4f->VS_Mod2Crete[indexVoies]));
+	TRS_EchantillonCreteFiltree2((int *)&echantillon[indexVoies],&(vip4f->VS_Mod2Crete[indexVoies]));
       }
       
       /* Calculer la grandeur caracteristique */
@@ -251,8 +254,8 @@ void agCreteMoyTRS(void *arg)
     }
     cmpt_trs++;    
 
-    // If not than going back to agARGA
-    owner = 0;
+    // Going to agRMS task
+    owner = 1;
   }
 }
 
