@@ -3,14 +3,13 @@ struct vip4f_t {
   // Produced by agARGA 
   /* For I0, I1, I2, I3 */
   SI32 DataBufferI[D_ACQ_NB_VOIES];
-
-  // Produced by AgCumulRMS
   /* Uniquement I1, I2, I3 */  
   /* cumul echantillons pour offset RMS */
   long V_TRS_CumulRms[D_ACQ_NB_VOIES-1];
   /* Uniquement I1, I2, I3 */  
   /* cumul carre echantillons pour calcul RMS */
   U_LONG V_TRS_CumulRms2[D_ACQ_NB_VOIES-1];
+  int cmpt_rms;
 
   // Produced by AgRMS
   /* Uniquement I1, I2 et I3 */
@@ -34,12 +33,19 @@ struct vip4f_t {
   long VS_Mod2Crete [D_ACQ_NB_VOIES-1];  
 } __attribute__((packed));
 
+/* To define the periodicity of the ARGA task */
+#define P_ARGA 55500
+
+#define OVERHEAD_DELAY 4
+
+/* Each function defines a task */
 void agARGA(void *arg);
-void agCumulRMS(void *arg);
+
 void agRMS(void *arg);
 void agMoy(void *arg);
 void agCrete(void *arg);
 void agTRS(void *arg);
+
 void ag5051_51Inv(void *arg);
 
 volatile _UNCACHED extern int owner;
