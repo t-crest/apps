@@ -1,0 +1,525 @@
+#include <stc.h>
+
+#include "include/typedef.h"
+#include "include/clocks.h"
+#include "include/define.h"
+
+/*=====================================================================================*/
+/*-------------------------------  AgPrepRMS  -----------------------------------------*/
+/*=====================================================================================*/
+#ifdef WITH_CUMUL_RMS
+agent AgCumulRMS(starttime=1) with HA_ARGA
+{
+  global {
+#ifdef DEBUG
+    char buf[512];
+#endif
+    long indexEchan, indexVoies;
+    int cmpt;
+  }
+  
+  temporal with HA_RMS {
+	  long 0$V_TRS_CumulRms[D_ACQ_NB_VOIES-1];	/* cumul échantillons pour offset RMS */
+	  /* Uniquement I1, I2, I3 */
+	  U_LONG 0$V_TRS_CumulRms2[D_ACQ_NB_VOIES-1];	/* cumul carrés échantillons pour calcul RMS */
+  }
+
+  display {
+#ifdef WITH_RMS
+     V_TRS_CumulRms: AgRMS;
+     V_TRS_CumulRms2: AgRMS;
+#endif
+   }
+  
+  consult {
+     AgARGA : 1 $DataBufferI;
+  } 
+
+  body start {
+#ifdef EVAL_APPLI_RMS
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+      // MAJ des cumuls échantillons
+	    V_TRS_CumulRms[indexVoies] += (U_LONG)(AgARGA`0$DataBufferI[indexVoies]);
+	    // MAJ des cumuls carrés échantillons
+	    V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)AgARGA`0$DataBufferI[indexVoies]*(U_LONG)AgARGA`0$DataBufferI[indexVoies]);
+    }
+    
+    cmpt++;
+
+    // TODO Autre façon de mettre à zéro ?
+    // Autre agent à la fréquence de 1Hz remettant à zéro les cumuls ?
+    if (cmpt>D_TRS_NB_ECH_RMS) {
+    	cmpt = 0;
+    	for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+    	      V_TRS_CumulRms[indexVoies] = 0;					// RAZ des cumuls échantillons
+    	      V_TRS_CumulRms2[indexVoies] = 0;				// RAZ des cumuls carrés échantillons
+    	}
+    }
+
+#ifdef DEBUG
+    sprintf(buf, "Cumul RMS /T=%Lu: I1=%d, I2=%d, I3=%d, 2I1=%lu, 2I2=%lu, 2I3=%lu\n", 
+            (unsigned long long)(presenttime()),
+            V_TRS_CumulRms[D_ACQ_VOIE_I1], V_TRS_CumulRms[D_ACQ_VOIE_I2], V_TRS_CumulRms[D_ACQ_VOIE_I3],
+            V_TRS_CumulRms2[D_ACQ_VOIE_I1], V_TRS_CumulRms2[D_ACQ_VOIE_I2], V_TRS_CumulRms2[D_ACQ_VOIE_I3]);
+    edit(buf);
+
+    sprintf(buf, "ARGA� /T=%Lu: I1²=%lu, I2²=%lu, I3²=%lu\n", 
+                (unsigned long long)(presenttime()),
+                (U_LONG)(AgARGA`0$DataBufferI [D_ACQ_VOIE_I1]) * (U_LONG)(AgARGA`0$DataBufferI [D_ACQ_VOIE_I1]), 
+                (U_LONG)(AgARGA`0$DataBufferI [D_ACQ_VOIE_I2]) * (U_LONG)(AgARGA`0$DataBufferI [D_ACQ_VOIE_I2]),
+                (U_LONG)(AgARGA`0$DataBufferI [D_ACQ_VOIE_I3]) * (U_LONG)(AgARGA`0$DataBufferI [D_ACQ_VOIE_I3]));
+    edit(buf);
+
+    sprintf(buf, "ARGA /T=%Lu: I1=%d, I2=%d, I3=%d\n", 
+                    (unsigned long long)(presenttime()),
+                    AgARGA`0$DataBufferI [D_ACQ_VOIE_I1], 
+                    AgARGA`0$DataBufferI [D_ACQ_VOIE_I2],
+                    AgARGA`0$DataBufferI [D_ACQ_VOIE_I3]);
+    edit(buf);
+#endif
+#ifdef EVAL_APPLI_RMS
+    *(volatile U_SHORT*) (0xE000500C) = 0xFFFF;
+#endif
+    advance(1);
+  }
+}
+#endif
+
+/*=====================================================================================*/
+/*-------------------------------  AgRMS  -----------------------------------------*/
+/*=====================================================================================*/
+#ifdef WITH_RMS
+agent AgRMS(starttime=1) with HA_RMS
+{
+  global {
+#ifdef DEBUG
+    char buf[512];
+#endif
+
+    long indexEchan, indexVoies;
+    long val;
+    int cmpt;
+
+    /* Uniquement I1, I2 et I3 */
+    long RMS[D_ACQ_NB_VOIES-1];
+    /* I1, I2, I3 et Io */
+    int I[D_ACQ_NB_VOIES];
+  }
+  consult {
+     AgCumulRMS : 1 $V_TRS_CumulRms, 1 $V_TRS_CumulRms2;
+     /* I1, I2, I3 et Io */
+     AgTRS  : 1 $VS_Mod2;
+  }
+
+  body start {
+#ifdef EVAL_APPLI_RMS
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif
+    cmpt++;
+    /* Voies I1, I2 et I3 */
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+      RMS [indexVoies] = CourantRMS_dA( AgCumulRMS`0$V_TRS_CumulRms2[indexVoies], AgCumulRMS`0$V_TRS_CumulRms[indexVoies]);  
+      val = (unsigned long)(isqrt(AgTRS`0$VS_Mod2[indexVoies]));
+      I [indexVoies] = ((int)val * 10)/55;
+    }
+
+    /* Voie Io */
+	val = (unsigned long)(isqrt(AgTRS`0$VS_Mod2[D_ACQ_VOIE_Io]));
+	I [D_ACQ_VOIE_Io] = ((int)val * 10)/55;
+
+#ifdef DEBUG
+    sprintf(buf, "RMS /T=%Lu: cmpt=%d, I1=%d, I2=%d, I3=%d, Io=%d, I1RMS=%d, I2RMS=%d, I3RMS=%d\n", 
+            (unsigned long long)(presenttime()), cmpt,
+            I [D_ACQ_VOIE_I1], I [D_ACQ_VOIE_I2], I [D_ACQ_VOIE_I3], I [D_ACQ_VOIE_Io], 
+            RMS [D_ACQ_VOIE_I1], RMS [D_ACQ_VOIE_I2], RMS [D_ACQ_VOIE_I3]);
+    edit(buf);
+#endif
+#ifdef EVAL_APPLI_RMS
+    *(volatile U_SHORT*) (0xE000500C) = 0xFFFF;
+#endif
+    advance(1);
+  }
+}
+#endif
+
+/*=====================================================================================*/
+/*-------------------------------  AgMoy  -----------------------------------------*/
+/*=====================================================================================*/
+#ifdef WITH_MOY
+agent AgMoy(starttime=1) with HA_MOY
+{
+  global {
+#ifdef DEBUG
+    char buf[512];
+#endif
+
+    long indexVoies, indexEchan;
+  }
+  temporal {
+    /* cumul échantillons pour filtre TRS */
+    /* I1, I2, I3 et Io */
+    int 	0$V_TRS_CumulFiltre [D_ACQ_NB_VOIES];
+#ifdef DEMONSTRATION
+      // Buffer de sortie à l attention de l agant AgCOMM
+	  char 0$bufferSortie[128];
+#endif /* DEMONSTRATION */
+  }
+  display {
+#ifdef WITH_TRS
+    V_TRS_CumulFiltre : AgTRS;
+#endif
+    // Test unitaire pour I = 100 A
+#ifdef UnitTest100 
+    V_TRS_CumulFiltre : AgTestMoy;
+#endif /* UnitTest1000 */
+    // Test unitaire pour I = 30000 A
+#ifdef UnitTest30000
+    V_TRS_CumulFiltre : AgTestMoy;
+#endif /* UnitTest30000 */
+#ifdef DEMONSTRATION
+    bufferSortie : AgCOMM;
+#endif /* DEMONSTRATION */
+    
+  }
+  consult {
+     AgARGA : D_TRS_NB_ECH_FILTRE $DataBufferI;
+  }
+
+  body start {
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif
+    /* Initialisation des valeurs cummulées */
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
+      V_TRS_CumulFiltre [indexVoies] = 0;				
+    }
+
+    next nominal;
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0xFFFF;
+#endif
+    advance(1);
+  }
+
+  body nominal {
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif 
+    /* Cumule des valeurs par voies.     */
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
+      for (indexEchan = 0; indexEchan < D_TRS_NB_ECH_FILTRE; ++indexEchan) {      
+        // MAJ des cumuls échantillons
+        V_TRS_CumulFiltre [indexVoies] += AgARGA`indexEchan$DataBufferI [indexVoies];
+      }
+      // Add 1 before truncature
+      // 0/3 => truncate to 0, 1/3 => truncate to 0, and 2/3 => truncate to 1
+      if (V_TRS_CumulFiltre [indexVoies] >= 0) V_TRS_CumulFiltre [indexVoies] += 1; else V_TRS_CumulFiltre [indexVoies] -= 1;
+    }
+
+	// Ecriture des moyennes sur 3 
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {    
+      V_TRS_CumulFiltre [indexVoies] = (V_TRS_CumulFiltre [indexVoies])/D_TRS_NB_ECH_FILTRE;
+    }
+    
+
+#ifdef DEBUG
+    sprintf(buf, "    MOY /T=%Lu: I1=%d, I2=%d, I3=%d, Io=%d\n", 
+            (unsigned long long)(presenttime()),            
+            V_TRS_CumulFiltre [D_ACQ_VOIE_I1], V_TRS_CumulFiltre [D_ACQ_VOIE_I2], 
+            V_TRS_CumulFiltre [D_ACQ_VOIE_I3], V_TRS_CumulFiltre [D_ACQ_VOIE_Io]);
+    edit(buf);
+#endif
+    
+#ifdef DEMONSTRATION
+    sprintf(bufferSortie, "%cT%LuE\n", AGENT_MOY, 
+    	    		(unsigned long long)(presenttime()));
+#endif /* DEMONSTRATION */
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0xFFFF;
+#endif
+    advance(1);
+  }
+}
+#endif
+
+
+/*=====================================================================================*/
+/*-------------------------------  AgCrete  -----------------------------------------*/
+/*=====================================================================================*/
+#ifdef WITH_CRETE
+agent AgCrete(starttime=1) with HA_CRETE
+{
+  global {
+#ifdef DEBUG
+    char buf[512];
+#endif
+    long indexVoies;
+  }
+
+  temporal {
+    /*
+      NOTE: eventuellement passer V_DETC en variable globale et laissant
+      que le champs .S en variable temporelle. Modifier la fonction TRS_DetectionCrete
+      pour passer en paramètre la variable globale et la variable temporelle .S.
+      En display, il ne reste que ce qui est nécessaire pour Ag5051 le .S
+    */
+    /* Uniquement I1, I2, et I3 */
+    S_TRS_DETC 0 $V_DETC [D_ACQ_NB_VOIES-1];
+  }
+
+  display {
+#ifdef WITH_TRS
+    V_DETC: AgTRS;
+#endif
+#ifdef UnitTest
+    V_DETC: AgTestCrete;
+#endif
+  }
+
+  consult {
+     AgARGA : 1 $DataBufferI;
+  }
+
+  body start {
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif
+    //Initialisation pour detection crete
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+      V_DETC[indexVoies].Maxi_ech = 0;
+      V_DETC[indexVoies].Mini_ech = 0;
+      V_DETC[indexVoies].Np = 0;
+      V_DETC[indexVoies].Nn = 0;
+      V_DETC[indexVoies].LastS = 0;
+    }
+
+    next nominal;
+  }
+
+  body nominal {
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+      TRS_DetectionCrete (AgARGA`0$DataBufferI [indexVoies], &V_DETC[indexVoies]);
+    }
+
+#ifdef DEBUG
+    sprintf(buf, "CRE /T=%Lu: I1.S=%d, I2.S=%d, I3.S=%d\n", 
+            (unsigned long long)(presenttime()),            
+            V_DETC[D_ACQ_VOIE_I1].S, V_DETC[D_ACQ_VOIE_I2].S, V_DETC[D_ACQ_VOIE_I3].S);
+    edit(buf);
+#endif
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0xFFFF;
+#endif
+    advance(1);
+  }
+}
+#endif
+
+
+/*=====================================================================================*/
+/*-------------------------------  AgTRS  -----------------------------------------*/
+/*=====================================================================================*/
+#ifdef WITH_TRS
+agent AgTRS(starttime=1) with HA_TRS
+{
+  global {
+	    int i,j;
+#ifdef DEBUG
+    char buf[512];
+#endif
+
+    long indexEchan, indexVoies;
+    unsigned long long temps;
+
+    /* Voies I1, I2, I3, Io */
+    int echantillon[D_ACQ_NB_VOIES][D_TRS_NB_BUF_I];
+    
+    /* Voies I1, I2, I3 et Io */
+    S_TRS_FXFY	V_TRS_H1 [D_ACQ_NB_VOIES];
+
+    /* Uniquement S1, S2 et S3 */
+    long    VS_Mod2_S [D_ACQ_NB_VOIES-1];
+    
+    int cmpt;
+    int index_source;
+  }
+  
+  temporal {
+    long  0$V_mod2Imax;	/* grandeur caracteristique  = Imax en Pts Can carre */
+
+    /* Voies I1, I2, I3 et Io */
+    long long 0$VS_Mod2 [D_ACQ_NB_VOIES];
+    
+    /* Voies I1, I2 et I3 */
+    long 0$VS_Mod2Crete [D_ACQ_NB_VOIES-1];
+#ifdef DEMONSTRATION
+	  char 0$bufferSortie[256];
+#endif /* DEMONSTRATION */
+  }
+  
+  display {
+#ifdef PROTECTIONS
+    V_mod2Imax : Ag5051, Ag51Inv;
+#endif
+#ifdef WITH_RMS
+    VS_Mod2 : AgRMS;
+#endif 
+    
+    // Test unitaire pour I = 100 A
+#ifdef UnitTest100 
+    VS_Mod2 : AgTestH1;
+    VS_Mod2Crete : AgTestCreteFiltree;
+#endif /* UnitTest1000 */
+    
+    // Test unitaire pour I = 100 A
+#ifdef UnitTest30000
+    VS_Mod2 : AgTestH1;
+    VS_Mod2Crete : AgTestCreteFiltree;
+#endif /* UnitTest30000 */
+    
+    // Buffer de sortie à l attention de l agent AgCOMM
+#ifdef DEMONSTRATION
+    bufferSortie : AgCOMM;
+#endif /* DEMONSTRATION */
+  }
+  consult {
+     AgMoy  : D_TRS_NB_BUF_I $V_TRS_CumulFiltre;
+     AgCrete : 1 $V_DETC;
+  }
+
+  body start {
+
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
+      V_TRS_H1[indexVoies].ComposanteFx		= 0;
+      V_TRS_H1[indexVoies].ComposanteFy		= 0;
+      V_TRS_H1[indexVoies].ComposanteFx_old		= 0;
+      V_TRS_H1[indexVoies].ComposanteFy_old		= 0;
+      VS_Mod2[indexVoies]				= 0;
+    }
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+      VS_Mod2Crete[indexVoies] = 0;
+    }
+
+    next nominal;
+  }
+
+  body nominal {
+	/* Préparation des tableaux */
+    /* 
+       Optimisation
+       NOTE mjan: possibilité de retirer ce tableau intermédiaire
+       en passant directement l'@ de V_TRS_CumulFitre[indexVoies]
+       aux différents appels de fonctions SinCosH1 et CreteFiltree.
+       Attention par contre à l'orde dans le tampon !
+    */
+    /*
+      NOTE: vérifier l'ordre des éléments dans le tableau.
+      Autrement dit, l'indice 0 est-il pour la valeur la plus récente ou la plus ancienne
+      NOTE yte: l'ordre des échantillons est concervé. L'algorithme SinCosH1 a été 
+      modifié afin de prendre en compte cette particularité.
+    */
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
+      for (indexEchan = 0; indexEchan < D_TRS_NB_BUF_I; ++indexEchan) {
+	  	  echantillon[indexVoies][indexEchan] = AgMoy`indexEchan $V_TRS_CumulFiltre [indexVoies];
+      }
+    }
+	
+	/* Mesure de phaseur (voies I1, I2, I3 et Io),crete filtree */
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
+    	TRS_EchantillonSinCosH12(&echantillon[indexVoies], &VS_Mod2 [indexVoies], indexVoies);
+    }
+	
+    /* Uniquement pour voies I1, I2 et I3 */
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {    
+      /*
+        NOTE: cette fonction SInCosH1 utlise une variable dont la sémantique
+        est le nombre d'échantillon. Avec OASIS on sait combien on a d'échantillons par construction
+      */
+      TRS_EchantillonCreteFiltree2(&echantillon[indexVoies],&VS_Mod2Crete[indexVoies]);
+    }
+
+    /* Calculer la grandeur caracteristique */
+    /* max des 3 courants phase issus du SINCOS */
+    /* et des 3 courants phases issus de la detection de crete */
+
+    for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
+      VS_Mod2_S[indexVoies] = (long)((long)AgCrete`0$V_DETC[indexVoies].S * (long)AgCrete`0$V_DETC[indexVoies].S);
+    }
+    
+    // Prends le Max par rapport à la valeur de H1.
+    V_mod2Imax = VS_Mod2 [D_ACQ_VOIE_I1];
+
+    if (VS_Mod2[D_ACQ_VOIE_I2] > V_mod2Imax)
+      V_mod2Imax = VS_Mod2[D_ACQ_VOIE_I2];
+    if (VS_Mod2[D_ACQ_VOIE_I3] > V_mod2Imax)
+      V_mod2Imax = VS_Mod2[D_ACQ_VOIE_I3];
+    
+    /* Prise en compte de la valeur crête filtrée dés qu'un phaseur */
+    /* dépasse In */
+    if (V_mod2Imax > calculeIn2())
+      {
+        if (VS_Mod2Crete[D_ACQ_VOIE_I1] > V_mod2Imax)
+          V_mod2Imax = VS_Mod2Crete[D_ACQ_VOIE_I1];
+        if (VS_Mod2Crete[D_ACQ_VOIE_I2] > V_mod2Imax)
+          V_mod2Imax = VS_Mod2Crete[D_ACQ_VOIE_I2];
+        if (VS_Mod2Crete[D_ACQ_VOIE_I3] > V_mod2Imax)
+          V_mod2Imax = VS_Mod2Crete[D_ACQ_VOIE_I3];
+      }
+    
+    /* Prise en compte de la valeur crête non filtrée dès qu'un phaseur */
+    /* dépasse 10In */
+    if (V_mod2Imax > (10 * calculeIn2()))
+      {
+        if (VS_Mod2_S[D_ACQ_VOIE_I1] > V_mod2Imax)
+          V_mod2Imax = VS_Mod2_S[D_ACQ_VOIE_I2];
+        if (VS_Mod2_S[D_ACQ_VOIE_I2] > V_mod2Imax)
+          V_mod2Imax = VS_Mod2_S[D_ACQ_VOIE_I2];
+        if (VS_Mod2_S[D_ACQ_VOIE_I3] > V_mod2Imax)
+          V_mod2Imax = VS_Mod2_S[D_ACQ_VOIE_I3];
+      }
+
+#ifdef DEBUG
+    sprintf(buf, "        TRS /T=%Lu: Crete filtrée=%Lu %Lu, %Lu\n", 
+            (unsigned long long)(presenttime()),
+            (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I1]), (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I2]), 
+    		(unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I3]));
+    edit(buf);
+    sprintf(buf, "        TRS /T=%Lu: SinCosH1=%Lu, %Lu, %Lu, %Lu\n", 
+            (unsigned long long)(presenttime()),
+            (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I1]), (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I2]), 
+    		(unsigned long long)(VS_Mod2[D_ACQ_VOIE_I3]), (unsigned long long)(VS_Mod2[D_ACQ_VOIE_Io]));
+    edit(buf);
+    sprintf(buf, "        TRS /T=%Lu: Crête non filtrée=%Lu, %Lu, %Lu, %Lu\n", 
+    	            (unsigned long long)(presenttime()),
+    	            (unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_I1]), (unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_I2]), 
+            		(unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_I3]), (unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_Io]));
+    	    edit(buf);
+    sprintf(buf, "        TRS /T=%Lu: V_mod2Imax=%Lu\n", 
+            (unsigned long long)(presenttime()), (unsigned long long)(V_mod2Imax));
+    edit(buf);
+#endif
+
+    // Envoie des données au panneau de contrôle
+#ifdef DEMONSTRATION
+    sprintf(bufferSortie, "%cT%LuCF1%LuCF2%LuCF3%LuSC1%LuSC2%LuSC3%LuSC4%LuM%LuE\n", AGENT_TRS, 
+    		(unsigned long long)(presenttime()),
+            (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I1]), 
+            (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I2]), 
+            (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I3]), 
+            (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I1]),
+            (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I2]), 
+            (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I3]), 
+            (unsigned long long)(VS_Mod2[D_ACQ_VOIE_Io]),
+            (unsigned long long)(V_mod2Imax));
+#endif /* DEMONSTRATION */
+	advance(1);
+	// Ne fait rien dans la seconde fenêtre temporelle.
+  advance(1);
+  }
+}
+#endif

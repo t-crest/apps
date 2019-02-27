@@ -1,0 +1,237 @@
+#include <stc.h>
+
+#include "include/typedef.h"
+#include "include/clocks.h"
+#include "include/define.h"
+
+application VIP4F(inittime=D_TRS_NB_ECH_FILTRE*D_TRS_NB_BUF_I*ARGA_RHYTHM) with US;
+
+/*=====================================================================================*/
+/*-------------------------------  AgARGA  -----------------------------------------*/
+/*=====================================================================================*/
+agent AgARGA(starttime=1) with HA_ARGA /* was 19 for unit tests */
+{
+  global {
+  #include "include/datas.h"
+#ifdef DEMONSTRATION
+  #include "include/charge.h"
+  #include "include/creneau.h"
+#endif /* DEMONSTRATION */	  
+#ifdef DEBUG
+    char buf[512];
+#endif
+
+    U_LONG  cmpt;
+    // Compteur d échantillon dans un cycle rapide
+#ifdef DEMONSTRATION
+    UI32    cmptCycle;
+    // Compteur d échantillon perturbé
+    UI32    cmptPert;
+    // Nombre d échantillon perturbé
+    UI32    nb_echantillon;
+    // Conserve la valeur de la commande durant le processus d injection (voir variable précédente).
+    UI8     insertionDefaut;
+    // Commande à interpreter
+    UI8     tCommande;
+    // =1 insertion du défaut effective.
+    UI8     injection;
+#endif  /* DEMONSTRATION */
+  }
+  temporal {
+	  SI32 0$DataBufferI[D_ACQ_NB_VOIES] = {0, 0, 0, 0};
+#ifdef DEMONSTRATION
+	  // Date d arrivé du premier échantillon perturbé.
+	  unsigned long long 0$deltaDeclT0;
+	  // Buffer de sortie contenant les informations ARGA (date de génération de l échantillon).
+	  char 0$bufferSortie[128];
+#endif /* DEMONSTRATION */
+  }
+  display {
+#ifdef WITH_MOY
+    DataBufferI  : AgMoy; 
+#endif
+#ifdef WITH_CRETE
+    DataBufferI  : AgCrete;
+#endif
+#ifdef WITH_CUMUL_RMS
+    DataBufferI  : AgCumulRMS;
+#endif
+#ifdef DEMONSTRATION
+    deltaDeclT0  : Ag51Inv, Ag5051;
+    bufferSortie : AgCOMM;
+#endif /* DEMONSTRATION */
+  }
+ 
+#ifdef DEMONSTRATION
+  consult {
+      AgCOMM:  1 $tCommande;
+  }
+#endif /* DEMONSTRATION */
+
+  body start {
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0x0000;
+#endif
+#ifdef DEMONSTRATION
+    cmptCycle = 0;
+    insertionDefaut = 0;
+    deltaDeclT0 = 0;
+    injection = 0;
+
+	tCommande = AgCOMM`0$tCommande;
+    
+	// Réception d une commande.
+	// Trois cas sont pris en compte :
+	// Pire cas
+	// Mellieur cas 
+	// Cas avec charge
+	if (tCommande >= 64 && tCommande <= 67) {
+		// L insertion du défaut est armé.
+		// Il restera effectif tout le long du défaut (NBR_ECHANTILLON_CRENEAU = nombre d échantillon perturbé).
+		insertionDefaut = tCommande;
+		switch (insertionDefaut) {
+			case TYPE_PERT_CHARGE : nb_echantillon = NBR_ECHANTILLON_CHARGE; break;
+			default: nb_echantillon = NBR_ECHANTILLON_CRENEAU; break;
+		}
+	}
+	
+	// Sélection de la perturbation à insérer 
+	if (insertionDefaut >= 64 && insertionDefaut <= 67)
+	{
+		switch (insertionDefaut) {
+		
+			case TYPE_PERT_CHARGE : {
+				injection = 1;
+				DataBufferI[D_ACQ_VOIE_I1] = data_charge[cmptPert];
+			    DataBufferI[D_ACQ_VOIE_I2] = data_charge[cmptPert];
+			    DataBufferI[D_ACQ_VOIE_I3] = data_charge[cmptPert];
+			    DataBufferI[D_ACQ_VOIE_Io] = data_charge[cmptPert];
+			    
+			    if (deltaDeclT0 == 0) {
+		    		deltaDeclT0 = (unsigned long long)(presenttime());
+		    	}
+
+			    cmptPert++;
+			} break;
+
+			case TYPE_PERT_PIRE : {
+				 // Insertion du défaut sur l échantillon 23 - n
+				if ((cmptCycle == 23) && (injection == 0)) {
+					injection = 1;
+				}
+				// N inject le défaut uniquement si l indice de l échantillon choisi à été atteint (dans le cycle rapide).
+				if (injection == 1) {
+					DataBufferI[D_ACQ_VOIE_I1] = data_creneau[cmptPert];
+				    DataBufferI[D_ACQ_VOIE_I2] = data_creneau[cmptPert];
+				    DataBufferI[D_ACQ_VOIE_I3] = data_creneau[cmptPert];
+				    DataBufferI[D_ACQ_VOIE_Io] = data_creneau[cmptPert];
+
+				    // Initialise le T0 (date d apparition du défaut)
+				    if (cmptCycle == 23)
+				    {
+				    	if (deltaDeclT0 == 0) {
+				    		deltaDeclT0 = (unsigned long long)(presenttime());
+				    	}
+				    }
+					cmptPert++;
+				}
+			} break;
+			
+			case TYPE_PERT_MIEUX : {
+				 // Insertion du défaut sur l échantillon 23 - n
+				if ((cmptCycle == 0) && (injection == 0)) {
+					injection = 1;
+				}
+				// N inject le défaut uniquement si l indice de l échantillon choisi à été atteint (dans le cycle rapide).
+				if (injection == 1) {
+					DataBufferI[D_ACQ_VOIE_I1] = data_creneau[cmptPert];
+				    DataBufferI[D_ACQ_VOIE_I2] = data_creneau[cmptPert];
+				    DataBufferI[D_ACQ_VOIE_I3] = data_creneau[cmptPert];
+				    DataBufferI[D_ACQ_VOIE_Io] = data_creneau[cmptPert];
+
+				    // Initialise le T0 (date d apparition du défaut)
+				    if (cmptCycle == 0)
+				    {
+				    	if (deltaDeclT0 == 0) {
+				    		deltaDeclT0 = (unsigned long long)(presenttime());
+				    	}
+				    }
+					cmptPert++;
+				}
+			} break;
+			
+			// Réinitialisation des variables de déclenchement
+			case TYPE_PERT_RESET : {
+				deltaDeclT0 = 0;
+				injection = 0;
+				insertionDefaut = 0;
+				cmptPert=0;
+			} break;
+		}
+	}
+
+	// Injection d une sinusoide pure si aucun défaut n est à injecter
+	if (injection == 0) {
+		// Injection d un sinusoide avec I = 30000A (pour les tests unitaires)
+#ifdef UnitTest30000
+		DataBufferI[D_ACQ_VOIE_I1] = sinus_data30000A[cmpt][D_ACQ_VOIE_I1];
+	    DataBufferI[D_ACQ_VOIE_I2] = sinus_data30000A[cmpt][D_ACQ_VOIE_I2];
+	    DataBufferI[D_ACQ_VOIE_I3] = sinus_data30000A[cmpt][D_ACQ_VOIE_I3];
+	    DataBufferI[D_ACQ_VOIE_Io] = 0;
+#else
+	    // Par défaut injection d un sinusoide avec I = 100A
+		DataBufferI[D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
+	    DataBufferI[D_ACQ_VOIE_I2] = sinus_data100A[cmpt][D_ACQ_VOIE_I2];
+	    DataBufferI[D_ACQ_VOIE_I3] = sinus_data100A[cmpt][D_ACQ_VOIE_I3];
+	    DataBufferI[D_ACQ_VOIE_Io] = 0;
+#endif /* UnitTest30000 */
+	}
+#else /* DEMONSTRATION */
+	// Par défaut injection d un sinusoide avec I = 100A
+	DataBufferI[D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
+    DataBufferI[D_ACQ_VOIE_I2] = sinus_data100A[cmpt][D_ACQ_VOIE_I2];
+    DataBufferI[D_ACQ_VOIE_I3] = sinus_data100A[cmpt][D_ACQ_VOIE_I3];
+    DataBufferI[D_ACQ_VOIE_Io] = 0;
+	
+#endif /* DEMONSTRATION */
+	
+	
+    ++cmpt;
+
+    // Reboucle sur le début de la sinusoide
+	if (cmpt>35) {
+		cmpt=0;
+	}
+
+#ifdef DEMONSTRATION
+	cmptCycle++;
+
+    // Passe au cycle rapide suivant
+    if (cmptCycle == 24)
+    	cmptCycle = 0;
+
+
+	// Arrête l injection de défaut si le nombre d échantillon pertubé est atteint 
+	if (cmptPert >= nb_echantillon) {
+		cmptPert = 0;
+		insertionDefaut = 0;
+		injection = 0;
+	}
+	
+	sprintf(bufferSortie, "%cT%LuR%dE\n", AGENT_ARGA, 
+	    	    		(unsigned long long)(presenttime()), DataBufferI[D_ACQ_VOIE_I1]);
+#endif /* DEMONSTRATION */
+	
+#ifdef DEBUG
+    sprintf(buf, "ARGA/T=%Lu: i=%d; I1=%d, I2=%d, I3=%d, Io=%d\n", 
+            (unsigned long long)(presenttime()), cmpt,
+            DataBufferI[D_ACQ_VOIE_I1], DataBufferI[D_ACQ_VOIE_I2], 
+            DataBufferI[D_ACQ_VOIE_I3], DataBufferI[D_ACQ_VOIE_Io]);
+    edit(buf);
+#endif
+#ifdef EVAL_APPLI
+    *(volatile U_SHORT*) (0xE000500C) = 0xFFFF;
+#endif
+    advance(1);
+  }
+}

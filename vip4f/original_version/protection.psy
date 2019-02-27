@@ -1,0 +1,229 @@
+#include <stc.h>
+
+#include "include/typedef.h"
+#include "include/clocks.h"
+#include "include/define.h"
+
+/*=====================================================================================*/
+/*-------------------------------  Ag5051  --------------------------------------------*/
+/*----------------------------Détection à temps constant-------------------------------*/
+/*=====================================================================================*/
+#ifdef PROTECTIONS
+agent Ag5051(starttime=1) with HA_5051
+{
+  global {
+  #include "lib/Bit.h"
+#ifdef DEBUG
+    char buf[512];
+#endif
+	char status[5];
+#ifdef DEMONSTRATION
+	int SeuilDecl[5];
+	unsigned long long premierDecl[3];
+	unsigned long long TempsDefaut;
+#endif /* DEMONSTRATION */
+  }
+
+#ifdef DEMONSTRATION
+  temporal {
+	  // Buffer de sortie à l attention de l agent AgCOMM
+  	  char 0$bufferSortie[128];
+    }
+#endif /* DEMONSTRATION */
+  
+  consult {
+    AgTRS:  1 $V_mod2Imax;
+    
+#ifdef DEMONSTRATION
+    // Date d arrivé du premier échantillon perturbé
+    AgARGA: 1 $deltaDeclT0;
+#endif /* DEMONSTRATION */
+  }
+
+#ifdef DEMONSTRATION
+  display {
+    bufferSortie : AgCOMM;
+  }
+#endif /* DEMONSTRATION */
+  
+  body start {
+	int i;
+	
+    /* Init F51 */
+	/* Paramètres : */
+	/* param1 = numéro de la protection */
+	/* param2 = seuil de déclenchement en ampère */
+	/* param3 = temporisation en nombre de cycle rapide (N*13,3ms) */
+    F51_Init(0, 200,0);
+    F51_Init(1, 300,1);
+    F51_Init(2, 500,2);
+
+    next nominal;
+
+    advance(1);
+  }
+  
+
+  body nominal {
+    /* Nothing to do in the first phase  */
+    advance(1);
+	 
+#ifdef DEMONSTRATION
+    F51_RapideDemo(0, AgTRS`0$V_mod2Imax, &status[0], &SeuilDecl[0]);
+    F51_RapideDemo(1, AgTRS`0$V_mod2Imax, &status[1], &SeuilDecl[1]);
+    F51_RapideDemo(2, AgTRS`0$V_mod2Imax, &status[2], &SeuilDecl[2]);
+#else
+    F51_RapideExp(0, AgTRS`0$V_mod2Imax);
+    F51_RapideExp(1, AgTRS`0$V_mod2Imax);
+    F51_RapideExp(2, AgTRS`0$V_mod2Imax);
+#endif /* DEMONSTRATION */
+
+#ifdef DEMONSTRATION
+    // Initialise la date d arrivé du premier échantillon perturbé
+    if (AgARGA`0$deltaDeclT0 != 0) {
+	   	TempsDefaut = AgARGA`0$deltaDeclT0;
+    } else {
+    	premierDecl[0] = 0;
+		premierDecl[1] = 0;
+		premierDecl[2] = 0;
+    }
+    // Communique la date d arrivé du premier échantillon perturbé
+    // ainsi que la date de passage du bit de temporiastion à 1
+    if ((status[0] & BIT_TEMPO) && (premierDecl[0] == 0)) {
+    	if (!premierDecl[0]) {
+    		premierDecl[0] = (unsigned long long)(presenttime());
+    		sprintf(bufferSortie, "%cT%LuD%LuB%LuE\n", AGENT_5051_1, 
+    				(unsigned long long)(presenttime()),TempsDefaut,
+					(unsigned long long)(premierDecl[0]));
+    		printf("default 0\n");
+    	}
+    } 
+    if ((status[1] & BIT_TEMPO) && (premierDecl[1] == 0)) {
+    	if (!premierDecl[1]) {
+    		premierDecl[1] = (unsigned long long)(presenttime());
+    		sprintf(bufferSortie, "%cT%LuD%LuB%LuE\n", AGENT_5051_2, 
+    				(unsigned long long)(presenttime()),TempsDefaut,
+					(unsigned long long)(premierDecl[1]));
+    		printf("default 1\n");
+    	}
+    }
+    if ((status[2] & BIT_TEMPO) && (premierDecl[2] == 0)) {
+    	if (!premierDecl[2]) {
+    		premierDecl[2] = (unsigned long long)(presenttime());
+    		sprintf(bufferSortie, "%cT%LuD%LuB%LuE\n", AGENT_5051_3, 
+    				(unsigned long long)(presenttime()),TempsDefaut,
+					(unsigned long long)(premierDecl[2]));
+    		printf("default 2\n");
+    	}
+    }
+    
+#endif /* DEMONSTRATION */
+    
+#ifdef DEBUG
+	sprintf(buf, "5051 /T=%Lu: ============> 5051 : Imax = %Lu\n", 
+        (unsigned long long)(presenttime()), (unsigned long long)(AgTRS`0$V_mod2Imax) );
+	edit(buf);
+
+    if (status[0] & BIT_TEMPO) {
+    	/* Sauvegarde la date du premier déclenchement de protection. Instantané */
+    	sprintf(buf, "5051 /T=%Lu: ============> Déclenchement 5051 : 0\n", 
+            (unsigned long long)(presenttime()));
+    	edit(buf);
+    }
+    if (status[1] & BIT_TEMPO) { 
+    	sprintf(buf, "5051 /T=%Lu: ============> Déclenchement 5051 : 1\n", 
+            (unsigned long long)(presenttime()));
+    	edit(buf);
+    }
+    if (status[2] & BIT_TEMPO) { 
+    	sprintf(buf, "5051 /T=%Lu: ============> Déclenchement 5051 : 2\n", 
+            (unsigned long long)(presenttime()));
+    	edit(buf);
+    }
+#endif
+    
+    // Contraint la protection à se terminer 3*555usec plus tôt afin de prendre en compte le
+    // cas suivant : Défaut visible sur AgMoy alors que le code TRS est en execution
+    before(1) with HA_PROTB;
+    /* Just to ensure temporal constraints */
+    advance(1);
+  }
+}
+
+
+/*=====================================================================================*/
+/*-------------------------------  AgF51Inv  ------------------------------------------*/
+/*----------------------------Détection à temps dépendant------------------------------*/
+/*=====================================================================================*/
+/* 
+   NOTE mjan: nécessité de séparer avec protection 5051 ?
+*/
+agent Ag51Inv(starttime=1) with HA_51INV
+{
+  global {
+  #include "lib/Bit.h"
+	  
+#ifdef DEBUG
+    char buf[512];
+#endif
+    char status[5];
+#ifdef DEMONSTRATION
+    int SeuilDecl[5];
+    unsigned long long premierDecl[2];
+#endif /* DEMONSTRATION */
+  }
+
+  consult {
+     AgTRS : 1 $V_mod2Imax;
+#ifdef DEMONSTRATION
+     AgARGA: 1 $deltaDeclT0;
+#endif /* DEMONSTRATION */
+  }
+
+  body start {
+    
+    F51_Inv_Init(3, 200, 0); /* 0 ms */
+    F51_Inv_Init(4, 1000, 5); /* 10ms */
+  
+    next nominal;
+
+    advance(1);
+  }
+
+  body nominal {
+    /* Nothing to do in the first phase  */	  
+    advance(1);
+
+#ifdef DEMONSTRATION
+    F51_Inv_RapideDemo(3, AgTRS`0$V_mod2Imax, &status[3], &SeuilDecl[3]);
+    F51_Inv_RapideDemo(4, AgTRS`0$V_mod2Imax, &status[4], &SeuilDecl[4]);
+#else
+    F51_Inv_RapideExp(3, AgTRS`0$V_mod2Imax);
+    F51_Inv_RapideExp(4, AgTRS`0$V_mod2Imax);
+#endif /* DEMONSTRATION */
+
+#ifdef DEBUG
+	
+    if (status[3] & BIT_TEMPO) { 
+    	sprintf(buf, "5051 INV /T=%Lu: ============> Déclenchement 5051 : 3\n", 
+            (unsigned long long)(presenttime()));
+    	edit(buf);
+    }
+    if (status[4] & BIT_TEMPO) {
+    	sprintf(buf, "5051 INV /T=%Lu: ============> Déclenchement 5051 : 4\n", 
+            (unsigned long long)(presenttime()));
+    	edit(buf);
+    }
+
+#endif
+
+    // Contraindre la protection à se terminer 3*555usec plus tôt afin de prendre en compte le
+    // cas suivant : Défaut visible sur AgMoy alors que le code TRS est en execution
+    before(1) with HA_PROTB;
+
+    /* Just to ensure temporal constraints */
+    
+    advance(1);
+  }
+}
+#endif
