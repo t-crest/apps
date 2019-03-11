@@ -35,6 +35,10 @@
 #define TYPE_PERT_PIRE   66 /* B */
 #define TYPE_PERT_CHARGE 67 /* C */
 
+#define DEMONSTRATION 1
+#define DEBUG 1
+
+
 #ifdef DEMONSTRATION
 	enum {
 		AGENT_ARGA=86, /* V */
