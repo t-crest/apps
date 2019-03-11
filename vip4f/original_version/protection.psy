@@ -24,12 +24,6 @@ agent Ag5051(starttime=1) with HA_5051
 #endif /* DEMONSTRATION */
   }
 
-#ifdef DEMONSTRATION
-  temporal {
-	  // Buffer de sortie à l attention de l agent AgCOMM
-  	  char 0$bufferSortie[128];
-    }
-#endif /* DEMONSTRATION */
   
   consult {
     AgTRS:  1 $V_mod2Imax;
@@ -40,12 +34,6 @@ agent Ag5051(starttime=1) with HA_5051
 #endif /* DEMONSTRATION */
   }
 
-#ifdef DEMONSTRATION
-  display {
-    bufferSortie : AgCOMM;
-  }
-#endif /* DEMONSTRATION */
-  
   body start {
 	int i;
 	
