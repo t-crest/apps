@@ -42,8 +42,6 @@ agent AgARGA(starttime=1) with HA_ARGA /* was 19 for unit tests */
 #ifdef DEMONSTRATION
 	  // Date d arrivé du premier échantillon perturbé.
 	  unsigned long long 0$deltaDeclT0;
-	  // Buffer de sortie contenant les informations ARGA (date de génération de l échantillon).
-	  char 0$bufferSortie[128];
 #endif /* DEMONSTRATION */
   }
   display {
@@ -77,10 +75,6 @@ agent AgARGA(starttime=1) with HA_ARGA /* was 19 for unit tests */
 		cmpt=0;
 	}
 
-		
-	sprintf(bufferSortie, "%cT%LuR%dE\n", AGENT_ARGA, 
-	    	    		(unsigned long long)(presenttime()), DataBufferI[D_ACQ_VOIE_I1]);
-	
 #ifdef DEBUG
     sprintf(buf, "ARGA/T=%Lu: i=%d; I1=%d, I2=%d, I3=%d, Io=%d\n", 
             (unsigned long long)(presenttime()), cmpt,

@@ -32,24 +32,6 @@
 #endif
 
 
-//#define DEMONSTRATION
-//#define EVAL_APPLI
-//#define EVAL_APPLI_RMS
-
-#ifdef DEMONSTRATION
-  #define SLOW
-	#define DEBUG
-	// Active l agent de communication 
-
-	// Active le test unitaire avec I = 100 A
-	#define UnitTest100
-
-	// Active le test unitaire avec I = 30000 A
-	//#define UnitTest30000
-
-  // Envoie les dates des agents à l agent de communication
-#endif /* DEMONSTRATION */
-
 /* Base tick */
 #ifdef SLOW
 clock US = gtc2(0,0,100); /* 100 usec */
