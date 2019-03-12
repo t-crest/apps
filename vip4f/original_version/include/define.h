@@ -37,15 +37,3 @@
 
 #define DEMONSTRATION 1
 #define DEBUG 1
-
-
-#ifdef DEMONSTRATION
-	enum {
-		AGENT_ARGA=86, /* V */
-		AGENT_MOY=87, /* W */
-		AGENT_TRS=88, /* X */
-		AGENT_5051_1=89, /* Y */
-		AGENT_5051_2=90, /* Z */
-		AGENT_5051_3=91 /* [ */
-	};
-#endif /* DEMONSTRATION */

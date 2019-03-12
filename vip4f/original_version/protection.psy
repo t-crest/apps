@@ -80,28 +80,22 @@ agent Ag5051(starttime=1) with HA_5051
     if ((status[0] & BIT_TEMPO) && (premierDecl[0] == 0)) {
     	if (!premierDecl[0]) {
     		premierDecl[0] = (unsigned long long)(presenttime());
-    		sprintf(bufferSortie, "%cT%LuD%LuB%LuE\n", AGENT_5051_1, 
-    				(unsigned long long)(presenttime()),TempsDefaut,
-					(unsigned long long)(premierDecl[0]));
-    		printf("default 0\n");
+    		sprintf(buf, "default 0\n");
+		edit(buf);
     	}
     } 
     if ((status[1] & BIT_TEMPO) && (premierDecl[1] == 0)) {
     	if (!premierDecl[1]) {
     		premierDecl[1] = (unsigned long long)(presenttime());
-    		sprintf(bufferSortie, "%cT%LuD%LuB%LuE\n", AGENT_5051_2, 
-    				(unsigned long long)(presenttime()),TempsDefaut,
-					(unsigned long long)(premierDecl[1]));
-    		printf("default 1\n");
+    		sprintf(buf, "default 1\n");
+		edit(buf);		
     	}
     }
     if ((status[2] & BIT_TEMPO) && (premierDecl[2] == 0)) {
     	if (!premierDecl[2]) {
     		premierDecl[2] = (unsigned long long)(presenttime());
-    		sprintf(bufferSortie, "%cT%LuD%LuB%LuE\n", AGENT_5051_3, 
-    				(unsigned long long)(presenttime()),TempsDefaut,
-					(unsigned long long)(premierDecl[2]));
-    		printf("default 2\n");
+    		sprintf(buf, "default 2\n");
+		edit(buf);		
     	}
     }
     
