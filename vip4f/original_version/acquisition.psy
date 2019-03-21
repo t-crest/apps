@@ -61,9 +61,15 @@ agent AgARGA(starttime=1) with HA_ARGA /* was 19 for unit tests */
  
   body start {
 	// Par défaut injection d un sinusoide avec I = 100A
-	DataBufferI[D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
+#ifdef DATA30000
+    DataBufferI[D_ACQ_VOIE_I1] = sinus_data30000A[cmpt][D_ACQ_VOIE_I1];
+    DataBufferI[D_ACQ_VOIE_I2] = sinus_data30000A[cmpt][D_ACQ_VOIE_I2];
+    DataBufferI[D_ACQ_VOIE_I3] = sinus_data30000A[cmpt][D_ACQ_VOIE_I3];
+#else
+    DataBufferI[D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
     DataBufferI[D_ACQ_VOIE_I2] = sinus_data100A[cmpt][D_ACQ_VOIE_I2];
     DataBufferI[D_ACQ_VOIE_I3] = sinus_data100A[cmpt][D_ACQ_VOIE_I3];
+#endif
     DataBufferI[D_ACQ_VOIE_Io] = 0;
 	
 	

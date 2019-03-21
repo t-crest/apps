@@ -35,5 +35,6 @@
 #define TYPE_PERT_PIRE   66 /* B */
 #define TYPE_PERT_CHARGE 67 /* C */
 
+//#define DATA30000 1
 #define DEMONSTRATION 1
 #define DEBUG 1

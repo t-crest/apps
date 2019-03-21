@@ -96,6 +96,7 @@ int moyenne100[12][3] = {
 		93, -17, -76
 };
 
+/* This is for VS_Mod2 from AgTRS */
 int H1100[3] = {
 		9789, 9787, 9787
 };
