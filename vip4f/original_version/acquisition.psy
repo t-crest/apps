@@ -76,8 +76,7 @@ agent AgARGA(starttime=1) with HA_ARGA /* was 19 for unit tests */
 	}
 
 #ifdef DEBUG
-    sprintf(buf, "ARGA/T=%Lu: i=%d; I1=%d, I2=%d, I3=%d, Io=%d\n", 
-            (unsigned long long)(presenttime()), cmpt,
+    sprintf(buf, "ARGA/c=%d; I1=%d, I2=%d, I3=%d, Io=%d\n", cmpt,
             DataBufferI[D_ACQ_VOIE_I1], DataBufferI[D_ACQ_VOIE_I2], 
             DataBufferI[D_ACQ_VOIE_I3], DataBufferI[D_ACQ_VOIE_Io]);
     edit(buf);

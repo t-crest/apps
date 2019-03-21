@@ -102,24 +102,21 @@ agent Ag5051(starttime=1) with HA_5051
 #endif /* DEMONSTRATION */
     
 #ifdef DEBUG
-	sprintf(buf, "5051 /T=%Lu: ============> 5051 : Imax = %Lu\n", 
-        (unsigned long long)(presenttime()), (unsigned long long)(AgTRS`0$V_mod2Imax) );
+	sprintf(buf, "5051/Imax= %Lu\n", 
+	(unsigned long long)(AgTRS`0$V_mod2Imax) );
 	edit(buf);
 
     if (status[0] & BIT_TEMPO) {
     	/* Sauvegarde la date du premier déclenchement de protection. Instantané */
-    	sprintf(buf, "5051 /T=%Lu: ============> Déclenchement 5051 : 0\n", 
-            (unsigned long long)(presenttime()));
+    	sprintf(buf, "5051/DECLENCHEMENT 0\n"); 
     	edit(buf);
     }
     if (status[1] & BIT_TEMPO) { 
-    	sprintf(buf, "5051 /T=%Lu: ============> Déclenchement 5051 : 1\n", 
-            (unsigned long long)(presenttime()));
+    	sprintf(buf, "5051/DECLENCHEMENT 1\n");
     	edit(buf);
     }
     if (status[2] & BIT_TEMPO) { 
-    	sprintf(buf, "5051 /T=%Lu: ============> Déclenchement 5051 : 2\n", 
-            (unsigned long long)(presenttime()));
+    	sprintf(buf, "5051/DECLENCHEMENT 2\n");
     	edit(buf);
     }
 #endif
@@ -187,13 +184,11 @@ agent Ag51Inv(starttime=1) with HA_51INV
 #ifdef DEBUG
 	
     if (status[3] & BIT_TEMPO) { 
-    	sprintf(buf, "5051 INV /T=%Lu: ============> Déclenchement 5051 : 3\n", 
-            (unsigned long long)(presenttime()));
+    	sprintf(buf, "5051INV/DECLENCHEMENT 3\n");
     	edit(buf);
     }
     if (status[4] & BIT_TEMPO) {
-    	sprintf(buf, "5051 INV /T=%Lu: ============> Déclenchement 5051 : 4\n", 
-            (unsigned long long)(presenttime()));
+    	sprintf(buf, "5051INV/DECLENCHEMENT 4\n");
     	edit(buf);
     }
 
