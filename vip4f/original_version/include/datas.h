@@ -37,7 +37,6 @@ int sinus_data100A[36][3] = {
 		98,		-34,	-64
 };
 
-#ifdef DEMONSTRATION
 int sinus_data30000A[36][3] = {
 	30000,	-15000,	-15000,
 	29544,	-19284,	-10261,
@@ -133,4 +132,3 @@ int CreteFiltree30000[3] = {
 		547372816, 547372816, 547372816
 };
 #endif /* UnitTest30000 */
-#endif /* DEMONSTRATION */
