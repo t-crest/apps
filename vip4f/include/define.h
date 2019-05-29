@@ -13,11 +13,7 @@
 #define D_TRS_NB_ECH_FILTRE	3
 
 /* Nombre d'échantillons à cumuler pour le calcul RMS */
-#ifdef POSIX
-#define D_TRS_NB_ECH_RMS 1800
-#else
 #define D_TRS_NB_ECH_RMS 24
-#endif
 
 /* nb d'échantillons filtrés utiles au calcul TRS */
 #define D_TRS_NB_BUF_I		12				

@@ -7,7 +7,6 @@
 #include "include/define.h"
 #include "include/shared.h"
 
-
 /*=====================================================================================*/
 /*-------------------------------  AgRMS  -----------------------------------------*/
 /*=====================================================================================*/
@@ -41,10 +40,11 @@ void agRMS(void *arg)
 
     for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
       // MAJ des cumuls echantillons
-      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
+      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[counter % D_TRS_NB_ECH_FILTRE][indexVoies]);      
+      //vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
       // MAJ des cumuls carre echantillons
-      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]*
-					      (U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
+      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[counter % D_TRS_NB_ECH_FILTRE][indexVoies]*
+					      (U_LONG)vip4f->DataBufferI[counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
     }
     
     if (cmpt == D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */

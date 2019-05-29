@@ -50,9 +50,11 @@ long CourantRMS_dA( unsigned long cumRMS2, long cumRMS);
 
 void F51_Init( char inst, long seuil, short tempo);
 void F51_RapideExp(char inst, long V_mod2Imax);
+void F51_RapideDemo(char inst, long V_mod2Imax, char *status, int *SeuilDecl);
 
 void F51_Inv_Init(char inst, long seuil, short tempo);
 void F51_Inv_RapideExp(char inst, long V_mod2Imax);
+void F51_Inv_RapideDemo(char inst, long V_mod2Imax, char *status, int *SeuilDecl);
 
 
 

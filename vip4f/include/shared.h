@@ -42,3 +42,4 @@ void agCreteMoyTRS(void *arg);
 void ag5051_51Inv(void *arg);
 
 volatile _UNCACHED extern int owner;
+volatile _UNCACHED extern long counter;
