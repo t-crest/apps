@@ -252,7 +252,6 @@ agent AgCrete(starttime=1) with HA_CRETE
 
 #ifdef DEBUG
     sprintf(buf, "CRE/I1.S=%d, I2.S=%d, I3.S=%d\n", 
-            (unsigned long long)(presenttime()),            
             V_DETC[D_ACQ_VOIE_I1].S, V_DETC[D_ACQ_VOIE_I2].S, V_DETC[D_ACQ_VOIE_I3].S);
     edit(buf);
 #endif

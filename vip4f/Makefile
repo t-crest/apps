@@ -6,6 +6,9 @@ all:
 clean:
 	rm -rf vip4f.elf
 
-run:
+simu:
 	patemu vip4f.elf
+
+run:
+	patex vip4f.elf
 

@@ -1,5 +1,5 @@
 /* A big structure for sharing stuff */
-struct vip4f_t {
+typedef struct {
   // Produced by agARGA 
   /* For I0, I1, I2, I3 */
   SI32 DataBufferI[D_TRS_NB_ECH_FILTRE][D_ACQ_NB_VOIES];
@@ -28,7 +28,12 @@ struct vip4f_t {
   /* Voies I1, I2 et I3 */
   long VS_Mod2Crete [D_ACQ_NB_VOIES-1];
   long counter_trs;
-} __attribute__((packed));
+
+  long counter_moy;
+
+  // Produce by protection algorithms
+  char status[5];
+} vip4f_t;
 
 /* To define the periodicity of the ARGA task */
 #define P_ARGA 55500
@@ -40,6 +45,9 @@ void agARGA(void *arg);
 void agRMS(void *arg);
 void agCreteMoyTRS(void *arg);
 void ag5051_51Inv(void *arg);
+
+extern vip4f_t vip4f_data;
+vip4f_t* vip4f;
 
 volatile _UNCACHED extern int owner;
 volatile _UNCACHED extern long counter;

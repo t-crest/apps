@@ -15,11 +15,10 @@
 void ag5051_51Inv(void *arg)
 {
   // Get access to the shared structure
-  struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  //struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
  
   int i;
 
-  char status[5];
   int SeuilDecl[5];  
   
   int id = get_cpuid();    
@@ -44,15 +43,15 @@ void ag5051_51Inv(void *arg)
     /* F51_RapideExp(1, vip4f->V_mod2Imax); */
     /* F51_RapideExp(2, vip4f->V_mod2Imax); */
 
-    F51_RapideDemo(0, vip4f->V_mod2Imax, &status[0], &SeuilDecl[0]);
-    F51_RapideDemo(1, vip4f->V_mod2Imax, &status[1], &SeuilDecl[1]);
-    F51_RapideDemo(2, vip4f->V_mod2Imax, &status[2], &SeuilDecl[2]);    
+    F51_RapideDemo(0, vip4f->V_mod2Imax, &(vip4f->status[0]), &SeuilDecl[0]);
+    F51_RapideDemo(1, vip4f->V_mod2Imax, &(vip4f->status[1]), &SeuilDecl[1]);
+    F51_RapideDemo(2, vip4f->V_mod2Imax, &(vip4f->status[2]), &SeuilDecl[2]);    
     
     /* F51_Inv_RapideExp(3, vip4f->V_mod2Imax); */
     /* F51_Inv_RapideExp(4, vip4f->V_mod2Imax); */
 
-    F51_Inv_RapideDemo(3, vip4f->V_mod2Imax, &status[3], &SeuilDecl[3]);
-    F51_Inv_RapideDemo(4, vip4f->V_mod2Imax, &status[4], &SeuilDecl[4]);    
+    F51_Inv_RapideDemo(3, vip4f->V_mod2Imax, &(vip4f->status[3]), &SeuilDecl[3]);
+    F51_Inv_RapideDemo(4, vip4f->V_mod2Imax, &(vip4f->status[4]), &SeuilDecl[4]);    
 
     // Going back to agRMS task
     owner = 1;

@@ -7,13 +7,15 @@
 #include "include/define.h"
 #include "include/shared.h"
 
+
+
 /*=====================================================================================*/
 /*-------------------------------  AgRMS  -----------------------------------------*/
 /*=====================================================================================*/
 void agRMS(void *arg)
 {
   // Get access to the shared structure
-  struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  //  volatile struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
 
   /* Uniquement I1, I2, I3 */  
   /* cumul echantillons pour offset RMS */
@@ -40,14 +42,14 @@ void agRMS(void *arg)
 
     for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
       // MAJ des cumuls echantillons
-      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[counter % D_TRS_NB_ECH_FILTRE][indexVoies]);      
-      //vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
+      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
       // MAJ des cumuls carre echantillons
-      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[counter % D_TRS_NB_ECH_FILTRE][indexVoies]*
-					      (U_LONG)vip4f->DataBufferI[counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
+      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]*
+					      (U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
     }
-    
-    if (cmpt == D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */
+
+    cmpt++;    
+    if (cmpt > D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
 	vip4f->RMS [indexVoies] = CourantRMS_dA(vip4f->V_TRS_CumulRms2[indexVoies],
 						vip4f->V_TRS_CumulRms[indexVoies]);  
@@ -59,6 +61,7 @@ void agRMS(void *arg)
       val = (unsigned long)(isqrt(vip4f->VS_Mod2[D_ACQ_VOIE_Io]));
       vip4f->I[D_ACQ_VOIE_Io] = ((int)val * 10)/55;
 
+      cmpt = 0;      
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
 	// RAZ des cumuls échantillons
 	vip4f->V_TRS_CumulRms[indexVoies] = 0;
@@ -66,9 +69,9 @@ void agRMS(void *arg)
 	vip4f->V_TRS_CumulRms2[indexVoies] = 0;				    
       }
 
-      cmpt = 0;
     }
-    cmpt++;    
+
+    inval_dcache(); //invalidate the data cache    
 
     // Going back to agARGA
     owner = 0;
@@ -79,7 +82,7 @@ void agRMS(void *arg)
 /*=====================================================================================*/
 /*-------------------------------  AgCreteMoyTRS  -------------------------------------*/
 /*=====================================================================================*/
-void init_crete(struct vip4f_t *vip4f)
+void init_crete(vip4f_t *vip4f)
 {
   //Initialisation pour detection crete
   for (long indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
@@ -91,7 +94,7 @@ void init_crete(struct vip4f_t *vip4f)
   }
 }
 
-void init_moy(struct vip4f_t *vip4f)
+void init_moy(vip4f_t *vip4f)
 {
   /* Initialisation des valeurs cummulées */
   for (long indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
@@ -102,7 +105,7 @@ void init_moy(struct vip4f_t *vip4f)
   vip4f->counter_trs = 0;
 }
 
-void agMoy(struct vip4f_t *vip4f)
+void agMoy(vip4f_t *vip4f)
 {
   long indexVoies, indexEchan;
   
@@ -123,11 +126,9 @@ void agMoy(struct vip4f_t *vip4f)
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {    
     vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] = (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies])/D_TRS_NB_ECH_FILTRE;
   }
-
-  vip4f->counter_trs++;
 }
 
-void agCrete(struct vip4f_t *vip4f)
+void agCrete(vip4f_t *vip4f)
 {
   long indexVoies;
   
@@ -139,7 +140,7 @@ void agCrete(struct vip4f_t *vip4f)
 void agCreteMoyTRS(void *arg)
 {
   // Get access to the shared structure
-  struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  //struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
 
   int id = get_cpuid();    
   
@@ -157,8 +158,9 @@ void agCreteMoyTRS(void *arg)
   /* Uniquement S1, S2 et S3 */
   long    VS_Mod2_S [D_ACQ_NB_VOIES-1];
   
-  int cmpt_moy = 0;
-  int cmpt_trs = 0;  
+  int cmpt_trs = -1;
+
+  vip4f->counter_moy = 0;
 
   // Initialization part
   init_crete(vip4f);
@@ -179,18 +181,18 @@ void agCreteMoyTRS(void *arg)
     while (id != owner);
 
     agCrete(vip4f);
-    if (cmpt_moy == D_TRS_NB_ECH_FILTRE) {
+    vip4f->counter_moy++; 
+    if (vip4f->counter_moy == D_TRS_NB_ECH_FILTRE) {
       agMoy(vip4f);
-      cmpt_moy = 0;
     }
-    cmpt_moy++;    
 
+    cmpt_trs++;    
     if (cmpt_trs == D_TRS_NB_BUF_I) {
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
 	// Patch to put in echantillon array the last values (and thus highest indexEchan)
 	// at the beginning of the array (and thus the lowest index)
 	long index = 0;
-	for (indexEchan = D_TRS_NB_BUF_I - 1; indexEchan >= 0; --indexEchan) {
+	for (indexEchan = 0; indexEchan < D_TRS_NB_BUF_I; ++indexEchan) {
 	  echantillon[indexVoies][index] = vip4f->V_TRS_CumulFiltre[indexEchan][indexVoies];
 	  index++;
 	}
@@ -252,10 +254,11 @@ void agCreteMoyTRS(void *arg)
       owner = 3;
       continue;
     }
-    cmpt_trs++;    
+
+    inval_dcache(); //invalidate the data cache    
 
     // Going to agRMS task
-    owner = 1;
+    if (owner != 3) owner = 1;
   }
 }
 
