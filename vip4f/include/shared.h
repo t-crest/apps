@@ -31,12 +31,6 @@ typedef struct {
   long VS_Mod2_S [D_ACQ_NB_VOIES-1];  
   long counter_trs;
 
-  int echantillon[D_ACQ_NB_VOIES][D_TRS_NB_BUF_I];
-  long moyenne[12];
-  short moyenne_echantillon;
-  short crete_abs;
-  long result;
-
   long counter_moy;
 
   // Produce by protection algorithms
@@ -64,8 +58,8 @@ void agRMS(void *arg);
 void agCreteMoyTRS(void *arg);
 void ag5051_51Inv(void *arg);
 
-extern vip4f_t vip4f_data;
-vip4f_t* vip4f;
+//extern vip4f_t vip4f_data;
+//vip4f_t* vip4f;
 
 volatile _UNCACHED extern int owner;
 volatile _UNCACHED extern long counter;

@@ -15,7 +15,7 @@
 void agRMS(void *arg)
 {
   // Get access to the shared structure
-  //  volatile struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  vip4f_t *vip4f = (vip4f_t*) PATMOS_IO_OWNSPM;
 
   volatile _IODEV int *timer_ptr = (volatile _IODEV int *) (PATMOS_IO_TIMER+4);
   int start_time, end_time;
@@ -151,7 +151,7 @@ void agCrete(vip4f_t *vip4f)
 void agCreteMoyTRS(void *arg)
 {
   // Get access to the shared structure
-  //struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  vip4f_t *vip4f = (vip4f_t*) PATMOS_IO_OWNSPM;
 
   volatile _IODEV int *timer_ptr = (volatile _IODEV int *) (PATMOS_IO_TIMER+4);
   int start_time, end_time;  
@@ -164,7 +164,7 @@ void agCreteMoyTRS(void *arg)
   unsigned long long temps;
   
   /* Voies I1, I2, I3, Io */
-  //int echantillon[D_ACQ_NB_VOIES][D_TRS_NB_BUF_I];
+  int echantillon[D_ACQ_NB_VOIES][D_TRS_NB_BUF_I];
   
   /* Voies I1, I2, I3 et Io */
   S_TRS_FXFY	V_TRS_H1 [D_ACQ_NB_VOIES];
@@ -213,19 +213,19 @@ void agCreteMoyTRS(void *arg)
 	// at the beginning of the array (and thus the lowest index)
 	long index = 0;
 	for (indexEchan = D_TRS_NB_BUF_I - 1; indexEchan >= 0 ; --indexEchan) {
-	  vip4f->echantillon[indexVoies][index] = vip4f->V_TRS_CumulFiltre[indexEchan][indexVoies];
+	  echantillon[indexVoies][index] = vip4f->V_TRS_CumulFiltre[indexEchan][indexVoies];
 	  index++;
 	}
       }
       
       /* Mesure de phaseur (voies I1, I2, I3 et Io),crete filtree */
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
-	TRS_EchantillonSinCosH12((int *)&(vip4f->echantillon[indexVoies]), &(vip4f->VS_Mod2[indexVoies]), indexVoies);
+	TRS_EchantillonSinCosH12((int *)&(echantillon[indexVoies]), &(vip4f->VS_Mod2[indexVoies]), indexVoies);
       }
     
       /* Uniquement pour voies I1, I2 et I3 */
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {    
-	TRS_EchantillonCreteFiltree2((int *)&(vip4f->echantillon[indexVoies]),&(vip4f->VS_Mod2Crete[indexVoies]));
+	TRS_EchantillonCreteFiltree2((int *)&(echantillon[indexVoies]),&(vip4f->VS_Mod2Crete[indexVoies]));
       }
       
       /* Calculer la grandeur caracteristique */

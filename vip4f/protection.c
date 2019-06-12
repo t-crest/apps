@@ -15,7 +15,7 @@
 void ag5051_51Inv(void *arg)
 {
   // Get access to the shared structure
-  //struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  vip4f_t *vip4f = (vip4f_t*) PATMOS_IO_OWNSPM;
 
   volatile _IODEV int *timer_ptr = (volatile _IODEV int *) (PATMOS_IO_TIMER+4);
   int start_time, end_time;    

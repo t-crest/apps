@@ -12,7 +12,7 @@
 #include "lib/MaxI.h"
 
 volatile _UNCACHED int owner;
-vip4f_t vip4f_data = {0};
+//vip4f_t vip4f_data = {0};
 
 void display(volatile vip4f_t *vip4f, int current_time) 
 {
@@ -93,7 +93,8 @@ void display(volatile vip4f_t *vip4f, int current_time)
 /*=====================================================================================*/
 void agARGA(void *arg)  {
   // Get access to the shared structure
-  //  volatile struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+  volatile vip4f_t *vip4f = (vip4f_t*) PATMOS_IO_OWNSPM;
+  //memset(&vip4f, 0, sizeof(vip4f_t));
   
   // Compteur d échantillon dans un cycle rapide  
   U_LONG  cmpt = 0;
@@ -147,7 +148,7 @@ int main() {
 
   owner = 0; // start with myself
 
-  vip4f = &vip4f_data;
+  //vip4f = &vip4f_data;
 
   corethread_create(1, &agRMS, NULL);
   corethread_create(2, &agCreteMoyTRS, NULL);
