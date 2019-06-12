@@ -15,10 +15,10 @@ typedef struct {
   /* Uniquement I1, I2 et I3 */
   long RMS[D_ACQ_NB_VOIES-1];
   /* I1, I2, I3 et Io */
-  int I[D_ACQ_NB_VOIES];
+  int I[D_ACQ_NB_VOIES];  
 
   // Produced by AgCreteMoyTRS
-  /* cumul Ã©chantillons pour filtre TRS */
+  /* cumul echantillons pour filtre TRS */
   /* I1, I2, I3 et Io */
   int V_TRS_CumulFiltre[D_TRS_NB_BUF_I][D_ACQ_NB_VOIES];
   S_TRS_DETC V_DETC[D_ACQ_NB_VOIES-1];
@@ -27,12 +27,30 @@ typedef struct {
   long long VS_Mod2 [D_ACQ_NB_VOIES];
   /* Voies I1, I2 et I3 */
   long VS_Mod2Crete [D_ACQ_NB_VOIES-1];
+  /* Uniquement S1, S2 et S3 */
+  long VS_Mod2_S [D_ACQ_NB_VOIES-1];  
   long counter_trs;
+
+  int echantillon[D_ACQ_NB_VOIES][D_TRS_NB_BUF_I];
+  long moyenne[12];
+  short moyenne_echantillon;
+  short crete_abs;
+  long result;
 
   long counter_moy;
 
   // Produce by protection algorithms
   char status[5];
+
+  // Exec time measurement
+  int arga;
+  int rms1;
+  int rms2;
+  int crete;
+  int moy;
+  int trs;
+  int protection;
+  
 } vip4f_t;
 
 /* To define the periodicity of the ARGA task */

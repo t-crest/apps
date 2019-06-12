@@ -22,8 +22,11 @@
 //*******************************************************************************
 #include <stdlib.h>
 
+#include <machine/patmos.h>
+
 #include "../include/typedef.h"
 #include "../include/define.h"
+#include "../include/shared.h"
 
 #include "CreteFiltree.h"
 
@@ -150,7 +153,7 @@ void TRS_EchantillonCreteFiltree2 (int * Table_Echantillons, long *Ptr_Crete_voi
 		Nombre_echantillons++;
 	}
 	while( Nombre_echantillons < 12 );
-	
+
 	// If average and crest are not the same sign we set average to zero
 	if ( ( Table_Echantillons[Nombre_echantillons] >= 0 ) && ( Moyenne_echantillons < 0 ) ) Moyenne_echantillons = 0;
 	else if ( ( Table_Echantillons[Nombre_echantillons] < 0 ) && ( Moyenne_echantillons > 0 ) ) Moyenne_echantillons = 0;

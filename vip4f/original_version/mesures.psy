@@ -417,19 +417,19 @@ agent AgTRS(starttime=1) with HA_TRS
       }
 
 #ifdef DEBUG
-    sprintf(buf, "TRS/CreteFiltre=%Lu, %Lu, %Lu\n", 
-            (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I1]), (unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I2]), 
-    		(unsigned long long)(VS_Mod2Crete[D_ACQ_VOIE_I3]));
+    sprintf(buf, "TRS/CreteFiltre=%ld, %ld, %ld\n", 
+            (long)(VS_Mod2Crete[D_ACQ_VOIE_I1]), (long)(VS_Mod2Crete[D_ACQ_VOIE_I2]), 
+    		(long)(VS_Mod2Crete[D_ACQ_VOIE_I3]));
     edit(buf);
-    sprintf(buf, "TRS/SinCosH1=%Lu, %Lu, %Lu, %Lu\n", 
-            (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I1]), (unsigned long long)(VS_Mod2[D_ACQ_VOIE_I2]), 
-    		(unsigned long long)(VS_Mod2[D_ACQ_VOIE_I3]), (unsigned long long)(VS_Mod2[D_ACQ_VOIE_Io]));
+    sprintf(buf, "TRS/SinCosH1=%lld, %lld, %lld, %lld\n", 
+            (long long)(VS_Mod2[D_ACQ_VOIE_I1]), (long long)(VS_Mod2[D_ACQ_VOIE_I2]), 
+    		(long long)(VS_Mod2[D_ACQ_VOIE_I3]), (long long)(VS_Mod2[D_ACQ_VOIE_Io]));
     edit(buf);
-    sprintf(buf, "TRS/CreteNonFiltre=%Lu, %Lu, %Lu, %Lu\n", 
-    	            (unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_I1]), (unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_I2]), 
-            		(unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_I3]), (unsigned long long)(VS_Mod2_S[D_ACQ_VOIE_Io]));
+    sprintf(buf, "TRS/CreteNonFiltre=%ld, %ld, %ld, %ld\n", 
+    	            (long)(VS_Mod2_S[D_ACQ_VOIE_I1]), (long)(VS_Mod2_S[D_ACQ_VOIE_I2]), 
+            		(long)(VS_Mod2_S[D_ACQ_VOIE_I3]), (long)(VS_Mod2_S[D_ACQ_VOIE_Io]));
     	    edit(buf);
-    sprintf(buf, "TRS/V_mod2Imax=%Lu\n", (unsigned long long)(V_mod2Imax));
+    sprintf(buf, "TRS/V_mod2Imax=%ld\n", (long)(V_mod2Imax));
     edit(buf);
 #endif
 

@@ -17,68 +17,74 @@ vip4f_t vip4f_data = {0};
 void display(volatile vip4f_t *vip4f, int current_time) 
 {
   static int cmptrms = -1;
-  static int cmpttrs = -1;  
+  static int cmpttrs = -1;
 
-  printf("ARGA/c=%ld, I1=%d, I2=%d, I3=%d, Io=%d\n", vip4f->counter % D_TRS_NB_ECH_FILTRE,
+  printf("ARGA/c=%ld, I1=%d, I2=%d, I3=%d, Io=%d, E=%d\n", vip4f->counter % D_TRS_NB_ECH_FILTRE,
 	 (int) vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I1],
 	 (int) vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I2], 
 	 (int) vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I3],
-	 (int) vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_Io]);
+	 (int) vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_Io],
+	 vip4f->arga);
 
-  printf("CRE/I1.S=%d, I2.S=%d, I3.S=%d\n",
+  printf("CRE/I1.S=%d, I2.S=%d, I3.S=%d, E=%d\n",
           vip4f->V_DETC[D_ACQ_VOIE_I1].S, vip4f->V_DETC[D_ACQ_VOIE_I2].S,
-  	 vip4f->V_DETC[D_ACQ_VOIE_I3].S);
+  	 vip4f->V_DETC[D_ACQ_VOIE_I3].S, vip4f->crete);
   
-  printf("RMS/I1=%d, I2=%d, I3=%d, 2I1=%lu, 2I2=%lu, 2I3=%lu\n",
+  printf("RMS/I1=%d, I2=%d, I3=%d, 2I1=%lu, 2I2=%lu, 2I3=%lu, E=%d\n",
 	 (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I1], (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I2],
 	 (int) vip4f->V_TRS_CumulRms[D_ACQ_VOIE_I3],
 	 vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I1], vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I2],
-	 vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I3]);
+	 vip4f->V_TRS_CumulRms2[D_ACQ_VOIE_I3],
+	 vip4f->rms1);
   
   cmptrms++;
   if (cmptrms == D_TRS_NB_ECH_RMS) {
-    printf("RMS/I1=%d, I2=%d, I3=%d, Io=%d, I1RMS=%d, I2RMS=%d, I3RMS=%d\n",
+    printf("RMS/I1=%d, I2=%d, I3=%d, Io=%d, I1RMS=%d, I2RMS=%d, I3RMS=%d, E=%d\n",
   	 vip4f->I[D_ACQ_VOIE_I1], vip4f->I[D_ACQ_VOIE_I2],
   	 vip4f->I[D_ACQ_VOIE_I3], vip4f->I[D_ACQ_VOIE_Io],
   	 (int) vip4f->RMS[D_ACQ_VOIE_I1], (int) vip4f->RMS[D_ACQ_VOIE_I2],
-  	 (int) vip4f->RMS[D_ACQ_VOIE_I3]);
+	 (int) vip4f->RMS[D_ACQ_VOIE_I3],
+	 vip4f->rms2);
     cmptrms = 0;
   }
 
   if (vip4f->counter_moy == D_TRS_NB_ECH_FILTRE) {
-    printf("MOY/c=%ld, I1=%d, I2=%d, I3=%d, Io=%d\n", vip4f->counter_trs,
+    printf("MOY/c=%ld, I1=%d, I2=%d, I3=%d, Io=%d, E=%d\n", vip4f->counter_trs,
 	   vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_I1],
 	   vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_I2],
 	   vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_I3],
-	   vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_Io]);
+	   vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][D_ACQ_VOIE_Io],
+	   vip4f->moy);
     vip4f->counter_trs++;
     vip4f->counter_moy = 0;
   }
   
   cmpttrs++;
-  if (cmpttrs == D_TRS_NB_BUF_I) {
-    for (int i= 0; i < D_TRS_NB_BUF_I; i++) {
-      printf("CumulFiltre=%d,", vip4f->V_TRS_CumulFiltre[i][D_ACQ_VOIE_I1]);
-    }
-    printf("\nTRS/CreteFiltre=%Lu, %Lu, %Lu\n",
-	   (unsigned long long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I1]),
-	   (unsigned long long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I2]),
-	   (unsigned long long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I3]));
-    printf("TRS/SinCosH1=%Lu, %Lu, %Lu, %Lu\n",
-	   (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I1]),
-	   (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I2]),
-	   (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I3]),
-	   (unsigned long long)(vip4f->VS_Mod2[D_ACQ_VOIE_Io]));
-    printf("TRS/V_mod2Imax=%Lu\n", (unsigned long long)(vip4f->V_mod2Imax));
+    if (cmpttrs == D_TRS_NB_BUF_I) {    
+    printf("TRS/CreteFiltre=%ld, %ld, %ld\n",
+	   (long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I1]),
+	   (long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I2]),
+	   (long)(vip4f->VS_Mod2Crete[D_ACQ_VOIE_I3]));
+    printf("TRS/SinCosH1=%lld, %lld, %lld, %lld\n",
+	   (long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I1]),
+	   (long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I2]),
+	   (long long)(vip4f->VS_Mod2[D_ACQ_VOIE_I3]),
+	   (long long)(vip4f->VS_Mod2[D_ACQ_VOIE_Io]));
+    printf("TRS/CreteNonFiltre=%ld, %ld, %ld, %ld\n", 
+	   (long)(vip4f->VS_Mod2_S[D_ACQ_VOIE_I1]), (long)(vip4f->VS_Mod2_S[D_ACQ_VOIE_I2]), 
+	   (long)(vip4f->VS_Mod2_S[D_ACQ_VOIE_I3]), (long)(vip4f->VS_Mod2_S[D_ACQ_VOIE_Io]));
+    printf("TRS/V_mod2Imax=%ld, E=%d\n", (long)(vip4f->V_mod2Imax),
+	    vip4f->trs);
     
     for (int i = 0; i < 5; i++) {
       if (vip4f->status[i] & BIT_TEMPO) {
 	printf("5051/DECLENCHEMENT %d\n", i);     
       }
     }
+    printf("PRO/E=%d\n", vip4f->protection);
     
     cmpttrs = 0;
-  }
+    }
 }
 
 
@@ -116,9 +122,9 @@ void agARGA(void *arg)  {
 
     start_time = *timer_ptr;
     vip4f->counter++;                
-    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I1] = sinus_data100A[cmpt][D_ACQ_VOIE_I1];
-    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I2] = sinus_data100A[cmpt][D_ACQ_VOIE_I2];
-    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I3] = sinus_data100A[cmpt][D_ACQ_VOIE_I3];
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I1] = sinus_data30000A[cmpt][D_ACQ_VOIE_I1];
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I2] = sinus_data30000A[cmpt][D_ACQ_VOIE_I2];
+    vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_I3] = sinus_data30000A[cmpt][D_ACQ_VOIE_I3];
     vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][D_ACQ_VOIE_Io] = 0;
     
     ++cmpt;    
@@ -129,6 +135,8 @@ void agARGA(void *arg)  {
     inval_dcache(); //invalidate the data cache    
     
     end_time = *timer_ptr;
+    vip4f->arga = end_time-start_time;
+    inval_dcache(); //invalidate the data cache        
 
     // Going to agCreteMoyTRS task
     owner = 2; 

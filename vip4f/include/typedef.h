@@ -16,7 +16,6 @@ typedef unsigned char  BOOL;   ///< Definition of bool.
 typedef unsigned char   CHAR;  ///< Definition of charater.
 #endif
 
-
 // structure pour la detection crete
 typedef struct S_TRS_DETC {
 	short Maxi_ech;

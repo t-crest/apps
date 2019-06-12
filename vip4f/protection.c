@@ -16,6 +16,9 @@ void ag5051_51Inv(void *arg)
 {
   // Get access to the shared structure
   //struct vip4f_t *vip4f = (struct vip4f_t*) PATMOS_IO_OWNSPM;
+
+  volatile _IODEV int *timer_ptr = (volatile _IODEV int *) (PATMOS_IO_TIMER+4);
+  int start_time, end_time;    
  
   int i;
 
@@ -38,6 +41,8 @@ void ag5051_51Inv(void *arg)
   // Periodic part
   while (1) {
     while (id != owner);
+
+    start_time = *timer_ptr;    
     
     /* F51_RapideExp(0, vip4f->V_mod2Imax); */
     /* F51_RapideExp(1, vip4f->V_mod2Imax); */
@@ -51,7 +56,13 @@ void ag5051_51Inv(void *arg)
     /* F51_Inv_RapideExp(4, vip4f->V_mod2Imax); */
 
     F51_Inv_RapideDemo(3, vip4f->V_mod2Imax, &(vip4f->status[3]), &SeuilDecl[3]);
-    F51_Inv_RapideDemo(4, vip4f->V_mod2Imax, &(vip4f->status[4]), &SeuilDecl[4]);    
+    F51_Inv_RapideDemo(4, vip4f->V_mod2Imax, &(vip4f->status[4]), &SeuilDecl[4]);
+
+    inval_dcache(); //invalidate the data cache        
+    end_time = *timer_ptr;
+    vip4f->protection = end_time-start_time;
+    
+    inval_dcache(); //invalidate the data cache            
 
     // Going back to agRMS task
     owner = 1;
