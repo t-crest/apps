@@ -21,6 +21,8 @@
 /* Used by MaxI.c, F51_Inv.c, utils.c and Rms.c */
 #define V_TRS_In 100
 
+//#define DATA30000 1
+
 #define TYPE_PERT_RESET  64
 #define TYPE_PERT_MIEUX  65 /* A */
 #define TYPE_PERT_PIRE   66 /* B */

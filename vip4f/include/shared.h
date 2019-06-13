@@ -3,7 +3,6 @@ typedef struct {
   // Produced by agARGA 
   /* For I0, I1, I2, I3 */
   SI32 DataBufferI[D_TRS_NB_ECH_FILTRE][D_ACQ_NB_VOIES];
-  long counter;
 
   // Produced by AgRMS
   /* Uniquement I1, I2, I3 */  
@@ -29,9 +28,12 @@ typedef struct {
   long VS_Mod2Crete [D_ACQ_NB_VOIES-1];
   /* Uniquement S1, S2 et S3 */
   long VS_Mod2_S [D_ACQ_NB_VOIES-1];  
-  long counter_trs;
 
+  long counter_arga;
+  long counter_rms;
   long counter_moy;
+  long counter_trs;
+  long cmpttrs;
 
   // Produce by protection algorithms
   char status[5];

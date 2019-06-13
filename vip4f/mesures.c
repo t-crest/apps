@@ -29,7 +29,8 @@ void agRMS(void *arg)
   
   long indexEchan, indexVoies;
   long val;
-  int cmpt = 0;
+
+  vip4f->counter_rms = 0;
 
   int id = get_cpuid();
 
@@ -46,18 +47,18 @@ void agRMS(void *arg)
     start_time = *timer_ptr;
     for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
       // MAJ des cumuls echantillons
-      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
+      vip4f->V_TRS_CumulRms[indexVoies] += (U_LONG)(vip4f->DataBufferI[vip4f->counter_arga][indexVoies]);
       // MAJ des cumuls carre echantillons
-      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]*
-					      (U_LONG)vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies]);
+      vip4f->V_TRS_CumulRms2[indexVoies] += (U_LONG)((U_LONG)vip4f->DataBufferI[vip4f->counter_arga][indexVoies]*
+					      (U_LONG)vip4f->DataBufferI[vip4f->counter_arga][indexVoies]);
     }
     inval_dcache();    
     end_time = *timer_ptr;
     vip4f->rms1 = end_time-start_time;     
 
-    cmpt++;    
-    if (cmpt > D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */
-      start_time = *timer_ptr;      
+    vip4f->counter_rms++;
+    if (vip4f->counter_rms == D_TRS_NB_ECH_RMS) {/* Voies I1, I2 et I3 */
+      start_time = *timer_ptr;
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
 	vip4f->RMS [indexVoies] = CourantRMS_dA(vip4f->V_TRS_CumulRms2[indexVoies],
 						vip4f->V_TRS_CumulRms[indexVoies]);  
@@ -69,7 +70,6 @@ void agRMS(void *arg)
       val = (unsigned long)(isqrt(vip4f->VS_Mod2[D_ACQ_VOIE_Io]));
       vip4f->I[D_ACQ_VOIE_Io] = ((int)val * 10)/55;
 
-      cmpt = 0;      
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
 	// RAZ des cumuls échantillons
 	vip4f->V_TRS_CumulRms[indexVoies] = 0;
@@ -113,7 +113,6 @@ void init_moy(vip4f_t *vip4f)
       vip4f->V_TRS_CumulFiltre[indexEchan][indexVoies] = 0;
     }
   }
-  vip4f->counter_trs = 0;
 }
 
 void agMoy(vip4f_t *vip4f)
@@ -124,18 +123,18 @@ void agMoy(vip4f_t *vip4f)
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
     for (indexEchan = 0; indexEchan < D_TRS_NB_ECH_FILTRE; ++indexEchan) {      
       // MAJ des cumuls échantillons
-      vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] += vip4f->DataBufferI[indexEchan][indexVoies];      
+      vip4f->V_TRS_CumulFiltre[vip4f->counter_trs][indexVoies] += vip4f->DataBufferI[indexEchan][indexVoies];      
     }
     // Add 1 before truncature
     // 0/3 => truncate to 0, 1/3 => truncate to 0, and 2/3 => truncate to 1
-    if (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] >= 0)
-      vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] += 1;
-    else vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] -= 1;
+    if (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs][indexVoies] >= 0)
+      vip4f->V_TRS_CumulFiltre[vip4f->counter_trs][indexVoies] += 1;
+    else vip4f->V_TRS_CumulFiltre[vip4f->counter_trs][indexVoies] -= 1;
   }
   
   // Ecriture des moyennes sur 3 
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {    
-    vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies] = (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs % D_TRS_NB_BUF_I][indexVoies])/D_TRS_NB_ECH_FILTRE;
+    vip4f->V_TRS_CumulFiltre[vip4f->counter_trs][indexVoies] = (vip4f->V_TRS_CumulFiltre[vip4f->counter_trs][indexVoies])/D_TRS_NB_ECH_FILTRE;
   }
 }
 
@@ -144,7 +143,7 @@ void agCrete(vip4f_t *vip4f)
   long indexVoies;
   
   for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES-1; ++indexVoies) {
-    TRS_DetectionCrete (vip4f->DataBufferI[vip4f->counter % D_TRS_NB_ECH_FILTRE][indexVoies], &(vip4f->V_DETC[indexVoies]));
+    TRS_DetectionCrete (vip4f->DataBufferI[vip4f->counter_arga][indexVoies], &(vip4f->V_DETC[indexVoies]));
   }
 }
 
@@ -169,8 +168,7 @@ void agCreteMoyTRS(void *arg)
   /* Voies I1, I2, I3 et Io */
   S_TRS_FXFY	V_TRS_H1 [D_ACQ_NB_VOIES];
   
-  int cmpt_trs = -1;
-
+  vip4f->counter_trs = 0;
   vip4f->counter_moy = 0;
 
   // Initialization part
@@ -196,6 +194,7 @@ void agCreteMoyTRS(void *arg)
     inval_dcache();
     end_time = *timer_ptr;    
     vip4f->crete = end_time-start_time;
+    
     vip4f->counter_moy++; 
     if (vip4f->counter_moy == D_TRS_NB_ECH_FILTRE) {
       start_time = *timer_ptr;      
@@ -205,8 +204,8 @@ void agCreteMoyTRS(void *arg)
       vip4f->moy = end_time-start_time;
     }
 
-    cmpt_trs++;    
-    if (cmpt_trs == D_TRS_NB_BUF_I) {
+    vip4f->counter_trs++;
+    if (vip4f->counter_trs == D_TRS_NB_BUF_I) {
       start_time = *timer_ptr;            
       for (indexVoies = 0; indexVoies < D_ACQ_NB_VOIES; ++indexVoies) {
 	// Patch to put in echantillon array the last values (and thus highest indexEchan)
@@ -267,8 +266,6 @@ void agCreteMoyTRS(void *arg)
 	  if (vip4f->VS_Mod2_S[D_ACQ_VOIE_I3] > vip4f->V_mod2Imax)
 	    vip4f->V_mod2Imax = vip4f->VS_Mod2_S[D_ACQ_VOIE_I3];
 	}
-
-      cmpt_trs = 0;
 
       // In that case, the next task to be executed is ag5051_51Inv
       owner = 3;
